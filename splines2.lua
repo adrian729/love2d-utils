@@ -52,13 +52,12 @@ function Splines:render(detail)
   detail = detail or 5
   local rpoints = {}
   for i = 1, #points - 2, 2 do
+    local p0x = points[i - 2]
+    local p0y = points[i - 1]
     local p1x = points[i]
     local p1y = points[i + 1]
     local p2x = points[i + 2]
     local p2y = points[i + 3]
-
-    local p0x = points[i - 2]
-    local p0y = points[i - 1]
     local p3x = points[i + 4]
     local p3y = points[i + 5]
 
