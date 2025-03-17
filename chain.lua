@@ -75,4 +75,10 @@ function Chain:draw()
   end
 end
 
+function Chain.simplifyAngle(angle)
+  -- Simplify angle to be in the range [0, 2pi]
+  local two_pi = 2 * math.pi
+  return angle - math.floor(angle / two_pi) * two_pi
+end
+
 return Chain
