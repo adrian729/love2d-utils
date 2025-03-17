@@ -14,7 +14,7 @@ local function flattenPoints(points_v2)
   return res
 end
 
-M.load = function()
+function M:load()
   local x0 = 100
   local y0 = 200
   points = {
@@ -46,7 +46,7 @@ M.load = function()
   spline_chordal = Splines:new(spline_points_5)
 end
 
-M.draw = function()
+function M:draw()
   love.graphics.setColor(1, 1, 1)
   love.graphics.line(points)
 
