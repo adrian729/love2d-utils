@@ -167,8 +167,10 @@ Vec2.setMag = Vec2.setMagnitude
 function Vec2:angle(v)
   -- angle value in rads.
   -- domain [-pi, pi]
-  v = v or Vec2:new(1, 0)
-  return math.atan2(Vec2.det(self, v), Vec2.dot(self, v))
+  if v then
+    return math.atan2(self:det(v), self:dot(v))
+  end
+  return math.atan2(self.y, self.x)
 end
 
 Vec2.rotation = Vec2.angle
