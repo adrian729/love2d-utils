@@ -25,6 +25,7 @@ function Chain:new(origin, joint_count, link_size, angle_constraint, speed)
   link_size = link_size or 100
   angle_constraint = angle_constraint or (2 * math.pi)
   speed = speed or 200
+
   return setmetatable(
     {
       joints = initJoints(origin, link_size, joint_count), -- list of joint positions as Vec2. #joints > 1
@@ -55,8 +56,8 @@ end
 
 function Chain:__tostring()
   local chain_str = '['
-  for i = 1, #self.joints, 1 do
-    chain_str = chain_str .. tostring(self.joints[i]) .. '/' .. tostring(self.angles[i])
+  for i, joint in ipairs(self.joints) do
+    chain_str = chain_str .. tostring(joint) .. '/' .. tostring(self.angles[i])
     if i < #self.joints then
       chain_str = chain_str .. ', '
     end
