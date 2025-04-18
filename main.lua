@@ -3,6 +3,7 @@ _G.debug = false
 
 _G.TestSplines = false
 _G.TestChain = false
+_G.TestFish = false
 
 function love.load(arg)
   for _, v in pairs(arg) do
@@ -17,12 +18,19 @@ function love.load(arg)
       TestChain = require 'test-chain'
       TestChain:load()
     end
+    if v == '--test-fish' then
+      TestFish = require 'test-fish'
+      TestFish:load()
+    end
   end
 end
 
 function love.update(dt)
   if TestChain then
     TestChain:update(dt)
+  end
+  if TestFish then
+    TestFish:update(dt)
   end
 end
 
@@ -32,5 +40,8 @@ function love.draw()
   end
   if TestChain then
     TestChain:draw()
+  end
+  if TestFish then
+    TestFish:draw()
   end
 end
