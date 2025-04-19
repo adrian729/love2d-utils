@@ -42,207 +42,6 @@ local function getSidePoints(m, pos_1, pos_2)
   return Vec2:new(-dy, dx):setMagnitude(m) + pos_1, Vec2:new(dy, -dx):setMagnitude(m) + pos_1
 end
 
-local function drawDorsalFin(self)
-  local joints = self.spine.joints
-
-  local dorsal_start_idx = 3
-  local dorsal_end_idx = 7
-  local dorsal_left = {}
-  local dorsal_right = {}
-
-  table.insert(dorsal_left, joints[dorsal_start_idx])
-  table.insert(dorsal_right, joints[dorsal_start_idx])
-  if debug then
-    love.graphics.setColor(1, 0, 1)
-    love.graphics.circle("fill", joints[dorsal_start_idx].x, joints[dorsal_start_idx].y, 5)
-  end
-
-  for i = dorsal_start_idx + 1, dorsal_end_idx - 1, 1 do
-    local side_1, side_2 = getSidePoints(0.25 * self.body_width[i], joints[i], joints[i + 1])
-    table.insert(dorsal_left, side_1)
-    table.insert(dorsal_right, side_2)
-    if debug then
-      love.graphics.setColor(1, 0, 1)
-      love.graphics.circle("fill", side_1.x, side_1.y, 5)
-      love.graphics.circle("fill", side_2.x, side_2.y, 5)
-    end
-  end
-
-  table.insert(dorsal_left, joints[dorsal_end_idx])
-  if debug then
-    love.graphics.setColor(1, 0, 1)
-    love.graphics.circle("fill", joints[dorsal_end_idx].x, joints[dorsal_end_idx].y, 5)
-  end
-
-  local dorsal_shape = {}
-  for _, p in ipairs(dorsal_left) do
-    table.insert(dorsal_shape, p)
-  end
-  for i = #dorsal_right, 1, -1 do
-    table.insert(dorsal_shape, dorsal_right[i])
-  end
-
-  love.graphics.setColor(fin_color[1], fin_color[2], fin_color[3])
-  local dorsal_splines_curve = Splines:new(dorsal_shape)
-  local dorsal_splines_points = dorsal_splines_curve:render({ detail = 200, type = 'v2' })
-
-  local dorsal_curve = {}
-  for _, point in ipairs(dorsal_splines_points) do
-    table.insert(dorsal_curve, point.x)
-    table.insert(dorsal_curve, point.y)
-    if debug then
-      love.graphics.setColor(1, 0, 1)
-      love.graphics.circle("line", point.x, point.y, 6)
-    end
-  end
-  love.graphics.line(dorsal_curve)
-end
-
-local function drawEyes(self)
-  local joints = self.spine.joints
-
-  local eye_size = 24 * self.scale
-  local eye_left, eye_right = getSidePoints(self.body_width[1] - 0.6 * eye_size, joints[1], joints[2])
-  love.graphics.setColor(0.7, 0.7, 0.7)
-  love.graphics.circle("fill", eye_left.x, eye_left.y, eye_size)
-  love.graphics.circle("fill", eye_right.x, eye_right.y, eye_size)
-  local pupil_size = 18 * self.scale
-  local pupil_left, pupil_right = getSidePoints(self.body_width[1] - 0.4 * eye_size, joints[1], joints[2])
-  love.graphics.setColor(0.05, 0.05, 0.05)
-  love.graphics.circle("fill", pupil_left.x, pupil_left.y, pupil_size)
-  love.graphics.circle("fill", pupil_right.x, pupil_right.y, pupil_size)
-end
-
-local function drawFins(self)
-  local joints = self.spine.joints
-
-  local left = {}
-  local right = {}
-
-  -- TODO firx things...
-  love.graphics.setColor(1, 0, 1)
-  local v = (joints[3] - joints[2])
-  -- love.graphics.circle('fill', v.x, v.y, 8)
-  -- print(v:magnitude())
-  love.graphics.setColor(1, 0, 0)
-  -- love.graphics.circle('fill', 300, 300, 8)
-
-  -- TODO: fix, all external points should come only from first point + its angle
-  for i = 2, 4, 1 do
-    local side_1, side_2 = getSidePoints(self.body_width[i], joints[i], joints[i + 1])
-    table.insert(left, side_1)
-    table.insert(right, side_2)
-  end
-  local side_1, side_2 = getSidePoints(1.5 * self.body_width[4], joints[4], joints[5])
-  table.insert(left, side_1)
-  table.insert(right, side_2)
-  side_1, side_2 = getSidePoints(1.8 * self.body_width[3], joints[3], joints[4])
-  table.insert(left, side_1)
-  table.insert(right, side_2)
-  side_1, side_2 = getSidePoints(self.body_width[2], joints[2], joints[3])
-  table.insert(left, side_1)
-  table.insert(right, side_2)
-
-  local curve_left = {}
-  local curve_right = {}
-  for _, p in ipairs(left) do
-    table.insert(curve_left, p.x)
-    table.insert(curve_left, p.y)
-  end
-  for _, p in ipairs(right) do
-    table.insert(curve_right, p.x)
-    table.insert(curve_right, p.y)
-  end
-
-  love.graphics.setColor(fin_color[1], fin_color[2], fin_color[3])
-  local l_splines = Splines:new(curve_left)
-  local l_splines_points = l_splines:render({ detail = 1000 })
-  love.graphics.line(l_splines_points)
-  local r_splines = Splines:new(curve_right)
-  local r_splines_points = r_splines:render({ detail = 1000 })
-  love.graphics.line(r_splines_points)
-
-  if debug then
-    for _, p in ipairs(left) do
-      love.graphics.setColor(1, 0, 0)
-      love.graphics.circle("fill", p.x, p.y, 5)
-    end
-    for _, p in ipairs(right) do
-      love.graphics.setColor(1, 0, 0)
-      love.graphics.circle("fill", p.x, p.y, 5)
-    end
-    for i = 2, #curve_left, 2 do
-      love.graphics.setColor(1, 1, 0)
-      love.graphics.circle("line", curve_left[i - 1], curve_left[i], 5)
-    end
-    for i = 2, #curve_right, 2 do
-      love.graphics.setColor(1, 1, 0)
-      love.graphics.circle("line", curve_right[i - 1], curve_right[i], 5)
-    end
-  end
-end
-
-local function drawTail(self)
-  local joints = self.spine.joints
-
-  local left = {}
-  local right = {}
-
-  local side_1, side_2 = getSidePoints(0.8 * self.body_width[#joints - 2], joints[#joints - 2], joints[#joints - 1])
-  table.insert(left, side_1)
-  table.insert(right, side_2)
-  if debug then
-    love.graphics.setColor(0, 0, 1)
-    love.graphics.circle("fill", side_1.x, side_1.y, 5)
-    love.graphics.circle("fill", side_2.x, side_2.y, 5)
-  end
-
-  local tail_2, tail_1 = getSidePoints(1.4 * self.body_width[#joints], joints[#joints], joints[#joints - 1])
-  table.insert(left, tail_1)
-  table.insert(right, tail_2)
-  if debug then
-    love.graphics.setColor(0, 0, 1)
-    love.graphics.circle("fill", tail_1.x, tail_1.y, 5)
-    love.graphics.circle("fill", tail_2.x, tail_2.y, 5)
-  end
-
-  local tail_end = (joints[#joints] - joints[#joints - 1])
-  tail_end = tail_end:setMagnitude(self.body_width[#joints] + self.spine.link_size)
-  tail_end = tail_end + joints[#joints - 1]
-  if debug then
-    love.graphics.setColor(0, 0, 1)
-    love.graphics.circle("fill", tail_end.x, tail_end.y, 5)
-  end
-  table.insert(left, tail_end)
-  -- Comment/uncomment depending on if we want repeated end point or not
-  -- table.insert(right, tail_end)
-
-  local shape = {}
-  for _, v in ipairs(left) do
-    table.insert(shape, v)
-  end
-  for i = #right, 1, -1 do
-    table.insert(shape, right[i])
-  end
-
-  love.graphics.setColor(fin_color[1], fin_color[2], fin_color[3])
-
-  local splines_curve = Splines:new(shape)
-  local splines_points = splines_curve:render({ detail = 1000, type = 'v2' })
-
-  local curve = {}
-  for _, point in ipairs(splines_points) do
-    table.insert(curve, point.x)
-    table.insert(curve, point.y)
-    if debug then
-      love.graphics.setColor(1, 1, 0)
-      love.graphics.circle("line", point.x, point.y, 6)
-    end
-  end
-
-  love.graphics.line(curve)
-end
-
 local function cleanupPoints(points)
   local new_points = {}
   table.insert(new_points, points[1])
@@ -281,8 +80,74 @@ local function paintPolygon(points, bg_color, color)
   love.graphics.line(curve)
 end
 
+local function drawDorsalFin(self)
+  local joints = self.spine.joints
+  local left = {}
+  local right = {}
+  local start_idx = 3
+  local end_idx = 7
+
+  table.insert(left, joints[start_idx])
+  table.insert(right, joints[start_idx])
+  local side_1, side_2 = getSidePoints(
+    0.02 * self.body_width[start_idx],
+    joints[start_idx],
+    joints[start_idx + 1]
+  )
+  table.insert(left, side_1)
+  table.insert(right, side_2)
+
+  for i = start_idx + 1, end_idx - 1, 1 do
+    side_1, side_2 = getSidePoints(
+      0.1 * self.body_width[i],
+      joints[i],
+      joints[i + 1]
+    )
+    table.insert(left, side_1)
+    table.insert(right, side_2)
+  end
+
+  side_1, side_2 = getSidePoints(
+    0.03 * self.body_width[end_idx],
+    joints[end_idx],
+    joints[end_idx + 1]
+  )
+  table.insert(left, side_1)
+  table.insert(right, side_2)
+  table.insert(left, joints[end_idx])
+  table.insert(right, joints[end_idx])
+
+  local shape = {}
+  for _, p in ipairs(left) do
+    table.insert(shape, p)
+  end
+  for i = #right, 1, -1 do
+    table.insert(shape, right[i])
+  end
+
+  local points = Splines:new(shape):render({ detail = 200, type = 'v2' })
+  paintPolygon(points, fin_color, { 1, 1, 1, })
+end
+
+local function drawEyes(self)
+  local joints = self.spine.joints
+
+  local eye_size = 24 * self.scale
+  local eye_left, eye_right = getSidePoints(self.body_width[1] - 0.6 * eye_size, joints[1], joints[2])
+  love.graphics.setColor(0.7, 0.7, 0.7)
+  love.graphics.circle("fill", eye_left.x, eye_left.y, eye_size)
+  love.graphics.circle("fill", eye_right.x, eye_right.y, eye_size)
+  local pupil_size = 18 * self.scale
+  local pupil_left, pupil_right = getSidePoints(self.body_width[1] - 0.4 * eye_size, joints[1], joints[2])
+  love.graphics.setColor(0.05, 0.05, 0.05)
+  love.graphics.circle("fill", pupil_left.x, pupil_left.y, pupil_size)
+  love.graphics.circle("fill", pupil_right.x, pupil_right.y, pupil_size)
+end
+
 local function drawBody(self)
   local joints = self.spine.joints
+  local left = {}
+  local right = {}
 
   if debug then
     love.graphics.setColor(0, 1, 0)
@@ -291,12 +156,9 @@ local function drawBody(self)
     end
   end
 
-  local left = {}
-  local right = {}
   local front = (joints[1] - joints[2])
   front = front:setMagnitude(self.body_width[1] + self.spine.link_size) + joints[2]
   table.insert(left, front)
-  -- Comment/uncomment depending on if we want repeated front point or not
   table.insert(right, front)
   local front_left = Vec2:fromAngle(self.spine.angles[2] - math.pi / 8)
   front_left = front_left:setMagnitude(self.body_width[1])
@@ -342,30 +204,81 @@ local function drawBody(self)
     table.insert(shape, right[i])
   end
 
-  local points = Splines:new(shape):render({ detail = 1000, type = 'v2' })
-  paintPolygon(points, body_color, { 255, 255, 255 })
+  local points = Splines:new(shape):render({ detail = 500, type = 'v2' })
+  paintPolygon(points, body_color, { 1, 1, 1 })
 end
 
+local function drawLateralFin(self, side, sign)
+  local sign = sign or 1
+  local r_x = self.scale * 75
+  local r_y = r_x / 2
+  love.graphics.translate(side.x, side.y)
+  love.graphics.rotate(self.spine.angles[3] + sign * math.pi / 3)
+  love.graphics.setColor(fin_color[1], fin_color[2], fin_color[3])
+  love.graphics.ellipse("fill", 0, 0, r_x, r_y)
+  love.graphics.setColor(1, 1, 1)
+  love.graphics.ellipse("line", 0, 0, r_x, r_y)
+  love.graphics.rotate(-self.spine.angles[3] - sign * math.pi / 3)
+  love.graphics.translate(-side.x, -side.y)
+end
+
+local function drawLateralFins(self)
+  local joints = self.spine.joints
+  local side_1, side_2 = getSidePoints(self.body_width[3], joints[3], joints[4])
+  drawLateralFin(self, side_1)
+  drawLateralFin(self, side_2, -1)
+end
+
+local function drawTail(self)
+  local joints = self.spine.joints
+  local left = {}
+  local right = {}
+
+  local side_1, side_2 = getSidePoints(0.8 * self.body_width[#joints - 2], joints[#joints - 2], joints[#joints - 1])
+  table.insert(left, side_1)
+  table.insert(right, side_2)
+  if debug then
+    love.graphics.setColor(0, 0, 1)
+    love.graphics.circle("fill", side_1.x, side_1.y, 5)
+    love.graphics.circle("fill", side_2.x, side_2.y, 5)
+  end
+
+  local tail_2, tail_1 = getSidePoints(1.4 * self.body_width[#joints], joints[#joints], joints[#joints - 1])
+  table.insert(left, tail_1)
+  table.insert(right, tail_2)
+  if debug then
+    love.graphics.setColor(0, 0, 1)
+    love.graphics.circle("fill", tail_1.x, tail_1.y, 5)
+    love.graphics.circle("fill", tail_2.x, tail_2.y, 5)
+  end
+
+  local tail_end = (joints[#joints] - joints[#joints - 1])
+  tail_end = tail_end:setMagnitude(self.body_width[#joints] + self.spine.link_size)
+  tail_end = tail_end + joints[#joints - 1]
+  if debug then
+    love.graphics.setColor(0, 0, 1)
+    love.graphics.circle("fill", tail_end.x, tail_end.y, 5)
+  end
+  table.insert(left, tail_end)
+
+  local shape = {}
+  for _, v in ipairs(left) do
+    table.insert(shape, v)
+  end
+  for i = #right, 1, -1 do
+    table.insert(shape, right[i])
+  end
+
+  local points = Splines:new(shape):render({ detail = 100, type = 'v2' })
+  paintPolygon(points, fin_color, { 1, 1, 1, })
+end
 
 function Fish:draw()
+  drawLateralFins(self)
+  drawTail(self)
   drawBody(self)
   drawDorsalFin(self)
   drawEyes(self)
-  -- drawFins(self)
-  drawTail(self)
-
-  local joints = self.spine.joints
-  local side_1, side_2 = getSidePoints(self.body_width[3], joints[3], joints[4])
-  love.graphics.translate(side_1.x, side_1.y)
-  love.graphics.rotate(self.spine.angles[3] + math.pi / 3)
-  love.graphics.ellipse("line", 0, 0, 30, 15)
-  love.graphics.rotate(-self.spine.angles[3] - math.pi / 3)
-  love.graphics.translate(-side_1.x, -side_1.y)
-  love.graphics.translate(side_2.x, side_2.y)
-  love.graphics.rotate(self.spine.angles[3] - math.pi / 3)
-  love.graphics.ellipse("line", 0, 0, 30, 15)
-  love.graphics.rotate(-self.spine.angles[3] + math.pi / 3)
-  love.graphics.translate(-side_2.x, -side_2.y)
 end
 
 return Fish
