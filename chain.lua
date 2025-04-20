@@ -19,15 +19,17 @@ local function initAngles(joint_count)
   return angles
 end
 
-function Chain:new(origin, joint_count, link_size, angle_constraint, speed)
+function Chain:new(origin, joint_count, link_size, angle_constraint, speed, scale)
   origin = origin or Vec2:new(0, 0)
   joint_count = joint_count or 2
-  link_size = link_size or 100
+  scale = scale or 1
+  link_size = scale * (link_size or 100)
   angle_constraint = angle_constraint or (2 * math.pi)
   speed = speed or 200
 
   return setmetatable(
     {
+      scale = scale,
       joints = initJoints(origin, link_size, joint_count), -- list of joint positions as Vec2. #joints > 1
       angles = initAngles(joint_count),
       link_size = link_size,                               -- distance between joints
@@ -122,9 +124,10 @@ local function deltaTarget(target, origin, mag)
 end
 Chain.deltaTarget = deltaTarget
 
-function Chain:resolve(pos, dt)
+function Chain:resolve(pos, dt, scaling)
+  scaling = scaling or false
   -- TODO smooth movement if rotation angle is to big
-  if self.joints[1]:distance(pos) < 1 then
+  if self.joints[1]:distance(pos) < 1 or scaling and self.joints[1]:distance(pos) > 0 then
     return
   end
 
@@ -135,6 +138,17 @@ function Chain:resolve(pos, dt)
   for i = 2, #self.joints, 1 do
     local curr_angle = (self.joints[i - 1] - self.joints[i]):angle()
     self.angles[i] = constrainAngle(curr_angle, self.angles[i - 1], self.angle_constraint)
+    self.joints[i] = self.joints[i - 1] - Vec2:fromAngle(self.angles[i]):setMagnitude(self.link_size)
+  end
+end
+
+function Chain:setScale(scale)
+  if self.scale == scale then
+    return
+  end
+  self.link_size = scale * self.link_size / self.scale
+  self.scale = scale
+  for i = 2, #self.joints, 1 do
     self.joints[i] = self.joints[i - 1] - Vec2:fromAngle(self.angles[i]):setMagnitude(self.link_size)
   end
 end

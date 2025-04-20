@@ -9,9 +9,7 @@ local body_color = { 58 / 255, 124 / 255, 165 / 255 }
 local fin_color = { 129 / 255, 195 / 255, 215 / 255 }
 local body_width = { 68, 81, 84, 83, 77, 64, 51, 38, 32, 19, 19, 19 }
 
--- TODO add method setScale to update fish scale. Needs to go from spine to spine and recalculate position from prev pos and angle
-
-function scaleBodyWidth(scale)
+local function scaleBodyWidth(scale)
   local scaled_body_width = {}
   for i, w in ipairs(body_width) do
     scaled_body_width[i] = scale * w
@@ -19,27 +17,40 @@ function scaleBodyWidth(scale)
   return scaled_body_width
 end
 
-function Fish:new(origin, scale)
+function Fish:new(origin, scale, speed)
   scale = scale or 1
+  speed = speed or 200
   return setmetatable(
     {
       scale = scale,
-      spine = Chain:new(origin, 12, scale * 64, math.pi / 8),
+      spine = Chain:new(origin, 12, 64, math.pi / 8, speed, scale),
       body_width = scaleBodyWidth(scale),
     },
     self
   )
 end
 
+function Fish:distance(point)
+  return self.spine.joints[1]:distance(point)
+end
+
+function Fish:setScale(scale)
+  if self.scale == scale then
+    return
+  end
+  self.spine:setScale(scale)
+  self.body_width = scaleBodyWidth(scale)
+  self.scale = scale
+end
+
 function Fish:resolve(target_pos, dt)
   self.spine:resolve(target_pos, dt)
 end
 
-local function getSidePoints(m, pos_1, pos_2)
-  local dx = pos_2.x - pos_1.x
-  local dy = pos_2.y - pos_1.y
-
-  return Vec2:new(-dy, dx):setMagnitude(m) + pos_1, Vec2:new(dy, -dx):setMagnitude(m) + pos_1
+local function getSidePoints(m, main_pos, secondary_pos)
+  local dx = secondary_pos.x - main_pos.x
+  local dy = secondary_pos.y - main_pos.y
+  return Vec2:new(-dy, dx):setMagnitude(m) + main_pos, Vec2:new(dy, -dx):setMagnitude(m) + main_pos
 end
 
 local function cleanupPoints(points)
@@ -58,10 +69,6 @@ local function createCurve(points)
   for _, point in ipairs(points) do
     table.insert(curve, point.x)
     table.insert(curve, point.y)
-    if debug then
-      love.graphics.setColor(1, 1, 0)
-      love.graphics.circle('line', point.x, point.y, 6)
-    end
   end
   return curve
 end
@@ -149,13 +156,6 @@ local function drawBody(self)
   local left = {}
   local right = {}
 
-  if debug then
-    love.graphics.setColor(0, 1, 0)
-    for i, joint in ipairs(joints) do
-      love.graphics.ellipse("line", joint.x, joint.y, self.body_width[i], self.body_width[i])
-    end
-  end
-
   local front = (joints[1] - joints[2])
   front = front:setMagnitude(self.body_width[1] + self.spine.link_size) + joints[2]
   table.insert(left, front)
@@ -176,24 +176,11 @@ local function drawBody(self)
   front_right_2 = front_right_2:setMagnitude(self.body_width[1])
   front_right_2 = front_right_2 + joints[1]
   table.insert(right, front_right_2)
-  if debug then
-    love.graphics.setColor(0, 0, 1)
-    love.graphics.circle("fill", front.x, front.y, 5)
-    love.graphics.circle("fill", front_left.x, front_left.y, 5)
-    love.graphics.circle("fill", front_left_2.x, front_left_2.y, 5)
-    love.graphics.circle("fill", front_right.x, front_right.y, 5)
-    love.graphics.circle("fill", front_right_2.x, front_right_2.y, 5)
-  end
 
   for i = 1, #joints - 2, 1 do
     local side_1, side_2 = getSidePoints(self.body_width[i], joints[i], joints[i + 1])
     table.insert(left, side_1)
     table.insert(right, side_2)
-    if debug then
-      love.graphics.setColor(0, 0, 1)
-      love.graphics.circle("fill", side_1.x, side_1.y, 5)
-      love.graphics.circle("fill", side_2.x, side_2.y, 5)
-    end
   end
 
   local shape = {}
@@ -209,7 +196,7 @@ local function drawBody(self)
 end
 
 local function drawLateralFin(self, side, sign)
-  local sign = sign or 1
+  sign = sign or 1
   local r_x = self.scale * 75
   local r_y = r_x / 2
   love.graphics.translate(side.x, side.y)
@@ -237,28 +224,14 @@ local function drawTail(self)
   local side_1, side_2 = getSidePoints(0.8 * self.body_width[#joints - 2], joints[#joints - 2], joints[#joints - 1])
   table.insert(left, side_1)
   table.insert(right, side_2)
-  if debug then
-    love.graphics.setColor(0, 0, 1)
-    love.graphics.circle("fill", side_1.x, side_1.y, 5)
-    love.graphics.circle("fill", side_2.x, side_2.y, 5)
-  end
 
   local tail_2, tail_1 = getSidePoints(1.4 * self.body_width[#joints], joints[#joints], joints[#joints - 1])
   table.insert(left, tail_1)
   table.insert(right, tail_2)
-  if debug then
-    love.graphics.setColor(0, 0, 1)
-    love.graphics.circle("fill", tail_1.x, tail_1.y, 5)
-    love.graphics.circle("fill", tail_2.x, tail_2.y, 5)
-  end
 
   local tail_end = (joints[#joints] - joints[#joints - 1])
   tail_end = tail_end:setMagnitude(self.body_width[#joints] + self.spine.link_size)
   tail_end = tail_end + joints[#joints - 1]
-  if debug then
-    love.graphics.setColor(0, 0, 1)
-    love.graphics.circle("fill", tail_end.x, tail_end.y, 5)
-  end
   table.insert(left, tail_end)
 
   local shape = {}
