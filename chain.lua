@@ -124,10 +124,13 @@ local function deltaTarget(target, origin, mag)
 end
 Chain.deltaTarget = deltaTarget
 
-function Chain:resolve(pos, dt, scaling)
-  scaling = scaling or false
+function Chain:resolve(pos, dt, is_scaling)
+  is_scaling = is_scaling or false
   -- TODO smooth movement if rotation angle is to big
-  if self.joints[1]:distance(pos) < 1 or scaling and self.joints[1]:distance(pos) > 0 then
+  if
+      self.joints[1]:distance(pos) < 1
+      or is_scaling and self.joints[1]:distance(pos) > 0
+  then
     return
   end
 

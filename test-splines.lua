@@ -46,6 +46,9 @@ function M:load()
   spline_chordal = Splines:new(spline_points_5)
 end
 
+function M:update()
+end
+
 function M:draw()
   love.graphics.setColor(1, 1, 1)
   love.graphics.line(points)

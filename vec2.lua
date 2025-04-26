@@ -12,8 +12,12 @@ function Vec2:new(x, y)
   )
 end
 
-function Vec2:fromAngle(angle)
-  return Vec2:new(math.cos(angle), math.sin(angle))
+function Vec2:fromAngle(angle, m)
+  return Vec2:new(math.cos(angle), math.sin(angle)):setMagnitude(m or 1)
+end
+
+function Vec2:random(m, min, max)
+  return Vec2:fromAngle(math.random(min or 0, max or (2 * math.pi)), m)
 end
 
 function Vec2:__index(key)
@@ -198,13 +202,36 @@ end
 
 Vec2.toRadians = Vec2.toRad
 
+function Vec2:normalize()
+  return self:setMagnitude(1)
+end
+
+function Vec2:limit(k)
+  if self:magnitude() > k then
+    self:setMagnitude(k)
+  end
+  return self
+end
+
 function Vec2.direction(val)
   -- if val is a num, we take it as the angle in rads
   if type(val) == 'number' then
     return Vec2:fromAngle(val)
   end
   -- else, we expect it to be a Vec2
-  return val:setMagnitude(1)
+  return val:normalize()
+end
+
+function Vec2:perpendicular(dir, m)
+  m = m or 1
+  local dx = dir.x - self.x
+  local dy = dir.y - self.y
+  return Vec2:new(dy, -dx):setMagnitude(m) + self,
+      Vec2:new(-dy, dx):setMagnitude(m) + self
+end
+
+function Vec2.lerp(a, b, t)
+  return a * (1 - t) + b * t
 end
 
 return Vec2

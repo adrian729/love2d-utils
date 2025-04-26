@@ -61,10 +61,6 @@ function Lizard:setScale(scale)
   self.scale = scale
 end
 
-local function lerp(a, b, t)
-  return a * (1 - t) + b * t
-end
-
 local function unused()
   for i, arm in ipairs(self.arms) do
     local side = 1
@@ -91,7 +87,7 @@ local function unused()
       joints[body_index - 1]
     )
     --arm:fabrikResolve(
-    -- lerp(arm.joints[1], self.arm_desired[i], 0.4),
+    -- arm.joints[1]:lerp(self.arm_desired[i], 0.4),
     --anchor_2
     --)
   end
@@ -122,11 +118,11 @@ local function resolveArms(self)
     joints[body_idx - 1]
   )
   arms[idx_l]:fabrikResolve(
-    lerp(arms[idx_l].joints[1], self.arm_desired[idx_l], 0.4),
+    arms[idx_l].joints[1]:lerp(self.arm_desired[idx_l], 0.4),
     anchor_1
   )
   arms[idx_r]:fabrikResolve(
-    lerp(arms[idx_r].joints[1], self.arm_desired[idx_r], 0.4),
+    arms[idx_r].joints[1]:lerp(self.arm_desired[idx_r], 0.4),
     anchor_2
   )
 
@@ -151,11 +147,11 @@ local function resolveArms(self)
     joints[body_idx - 1]
   )
   arms[idx_l]:fabrikResolve(
-    lerp(arms[idx_l].joints[1], self.arm_desired[idx_l], 0.4),
+    arms[idx_l].joints[1]:lerp(self.arm_desired[idx_l], 0.4),
     anchor_1
   )
   arms[idx_r]:fabrikResolve(
-    lerp(arms[idx_r].joints[1], self.arm_desired[idx_r], 0.4),
+    arms[idx_r].joints[1]:lerp(self.arm_desired[idx_r], 0.4),
     anchor_2
   )
 end
