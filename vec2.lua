@@ -3,10 +3,12 @@
 local Vec2 = {}
 
 function Vec2:new(x, y)
+  x = x or 0
+  y = y or x
   return setmetatable(
     {
-      x = x or 0,
-      y = y or 0,
+      x = x,
+      y = y,
     },
     self
   )

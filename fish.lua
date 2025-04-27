@@ -96,32 +96,28 @@ local function drawDorsalFin(self)
 
   table.insert(left, joints[start_idx])
   table.insert(right, joints[start_idx])
-  -- perpendicular gives back (L, R), but we check each joint with the next one (so L and R are flipped for us)
-  -- TODO: chage getSidePoints with perpendicular and remove function
-  local side_2, side_1 = joints[start_idx]:perpendicular(
+  local side_r, side_l = joints[start_idx]:perpendicular(
     joints[start_idx + 1],
     0.02 * self.body_width[start_idx]
   )
-  table.insert(left, side_1)
-  table.insert(right, side_2)
+  table.insert(left, side_l)
+  table.insert(right, side_r)
 
   for i = start_idx + 1, end_idx - 1, 1 do
-    side_1, side_2 = getSidePoints(
-      0.1 * self.body_width[i],
-      joints[i],
-      joints[i + 1]
+    side_r, side_l = joints[i]:perpendicular(
+      joints[i + 1],
+      0.1 * self.body_width[i]
     )
-    table.insert(left, side_1)
-    table.insert(right, side_2)
+    table.insert(left, side_l)
+    table.insert(right, side_r)
   end
 
-  side_1, side_2 = getSidePoints(
-    0.03 * self.body_width[end_idx],
-    joints[end_idx],
-    joints[end_idx + 1]
+  side_r, side_l = joints[end_idx]:perpendicular(
+    joints[end_idx + 1],
+    0.03 * self.body_width[end_idx]
   )
-  table.insert(left, side_1)
-  table.insert(right, side_2)
+  table.insert(left, side_l)
+  table.insert(right, side_r)
   table.insert(left, joints[end_idx])
   table.insert(right, joints[end_idx])
 
