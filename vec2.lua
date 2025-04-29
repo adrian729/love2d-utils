@@ -1,8 +1,8 @@
 -- Vec2 module to practice metatables and Lua
 -- Lua v5.1^
-local Vec2 = {}
+local M = {}
 
-function Vec2:new(x, y)
+function M:new(x, y)
   x = x or 0
   y = y or x
   return setmetatable(
@@ -14,17 +14,17 @@ function Vec2:new(x, y)
   )
 end
 
-function Vec2:fromAngle(angle, m)
-  return Vec2:new(math.cos(angle), math.sin(angle)):setMagnitude(m or 1)
+function M:fromAngle(angle, m)
+  return M:new(math.cos(angle), math.sin(angle)):setMagnitude(m or 1)
 end
 
-function Vec2:random(m, min, max)
-  return Vec2:fromAngle(math.random(min or 0, max or (2 * math.pi)), m)
+function M:random(m, min, max)
+  return M:fromAngle(math.random(min or 0, max or (2 * math.pi)), m)
 end
 
-function Vec2:__index(key)
+function M:__index(key)
   if key == nil then
-    return Vec2
+    return M
   end
 
   if type(key) == 'number' then
@@ -48,10 +48,10 @@ function Vec2:__index(key)
     return self.y
   end
 
-  return Vec2[key]
+  return M[key]
 end
 
-function Vec2:__tostring()
+function M:__tostring()
   return '(' .. self.x .. ', ' .. self.y .. ')'
 end
 
@@ -60,77 +60,77 @@ end
 
 -- non-trivial operations Hadamard style
 
-function Vec2.__add(a, b)
+function M.__add(a, b)
   if type(a) == "number" then
-    return Vec2:new(a + b.x, a + b.y)
+    return M:new(a + b.x, a + b.y)
   elseif type(b) == "number" then
-    return Vec2:new(a.x + b, a.y + b)
+    return M:new(a.x + b, a.y + b)
   end
-  return Vec2:new(a.x + b.x, a.y + b.y)
+  return M:new(a.x + b.x, a.y + b.y)
 end
 
-function Vec2.__sub(a, b)
+function M.__sub(a, b)
   if type(a) == "number" then
-    return Vec2:new(a - b.x, a - b.y)
+    return M:new(a - b.x, a - b.y)
   elseif type(b) == "number" then
-    return Vec2:new(a.x - b, a.y - b)
+    return M:new(a.x - b, a.y - b)
   end
-  return Vec2:new(a.x - b.x, a.y - b.y)
+  return M:new(a.x - b.x, a.y - b.y)
 end
 
-function Vec2.__mul(a, b)
+function M.__mul(a, b)
   if type(a) == "number" then
-    return Vec2:new(a * b.x, a * b.y)
+    return M:new(a * b.x, a * b.y)
   elseif type(b) == "number" then
-    return Vec2:new(a.x * b, a.y * b)
-  end
-  -- Hadamard product
-  return Vec2:new(a.x * b.x, a.y * b.y)
-end
-
-function Vec2.__div(a, b)
-  if type(a) == "number" then
-    return Vec2:new(a / b.x, a / b.y)
-  elseif type(b) == "number" then
-    return Vec2:new(a.x / b, a.y / b)
+    return M:new(a.x * b, a.y * b)
   end
   -- Hadamard product
-  return Vec2:new(a.x / b.x, a.y / b.y)
+  return M:new(a.x * b.x, a.y * b.y)
 end
 
-function Vec2.__mod(a, b)
+function M.__div(a, b)
   if type(a) == "number" then
-    return Vec2:new(a % b.x, a % b.y)
+    return M:new(a / b.x, a / b.y)
   elseif type(b) == "number" then
-    return Vec2:new(a.x % b, a.y % b)
+    return M:new(a.x / b, a.y / b)
+  end
+  -- Hadamard product
+  return M:new(a.x / b.x, a.y / b.y)
+end
+
+function M.__mod(a, b)
+  if type(a) == "number" then
+    return M:new(a % b.x, a % b.y)
+  elseif type(b) == "number" then
+    return M:new(a.x % b, a.y % b)
   end
   -- Hadamard product style mod
-  return Vec2:new(a.x % b.x, a.y % b.y)
+  return M:new(a.x % b.x, a.y % b.y)
 end
 
-function Vec2.__pow(a, b)
+function M.__pow(a, b)
   if type(a) == "number" then
-    return Vec2:new(a ^ b.x, a ^ b.y)
+    return M:new(a ^ b.x, a ^ b.y)
   elseif type(b) == "number" then
-    return Vec2:new(a.x ^ b, a.y ^ b)
+    return M:new(a.x ^ b, a.y ^ b)
   end
   -- Hadamard product style pow
-  return Vec2:new(a.x ^ b.x, a.y ^ b.y)
+  return M:new(a.x ^ b.x, a.y ^ b.y)
 end
 
-function Vec2.__unm(a)
-  return Vec2:new(-a.x, -a.y)
+function M.__unm(a)
+  return M:new(-a.x, -a.y)
 end
 
-function Vec2.__idiv(a, b)
+function M.__idiv(a, b)
   -- floor division
   if type(a) == "number" then
-    return Vec2:new(math.floor(a / b.x), math.floor(a / b.y))
+    return M:new(math.floor(a / b.x), math.floor(a / b.y))
   elseif type(b) == "number" then
-    return Vec2:new(math.floor(a.x / b), math.floor(a.y / b))
+    return M:new(math.floor(a.x / b), math.floor(a.y / b))
   end
   -- Hadamard product style idiv
-  return Vec2:new(math.floor(a.x / b.x), math.floor(a.y / b.y))
+  return M:new(math.floor(a.x / b.x), math.floor(a.y / b.y))
 end
 
 -------------
@@ -138,28 +138,28 @@ end
 
 -- relational operations by comparing each component.
 
-function Vec2.__eq(a, b)
+function M.__eq(a, b)
   return a.x == b.x and a.y == b.y
 end
 
-function Vec2.__lt(a, b)
+function M.__lt(a, b)
   return a.x < b.x and a.y < b.y
 end
 
-function Vec2.__le(a, b)
+function M.__le(a, b)
   return a.x <= b.x and a.y <= b.y
 end
 
 -----------------
--- Vec2 functions
+-- functions
 
-function Vec2:magnitude()
+function M:magnitude()
   return math.sqrt(self.x ^ 2 + self.y ^ 2)
 end
 
-Vec2.mag = Vec2.magnitude
+M.mag = M.magnitude
 
-function Vec2:setMagnitude(m)
+function M:setMagnitude(m)
   -- modifies self, returns self
   local frac = m / self:magnitude()
   self.x = frac * self.x
@@ -168,9 +168,9 @@ function Vec2:setMagnitude(m)
   return self
 end
 
-Vec2.setMag = Vec2.setMagnitude
+M.setMag = M.setMagnitude
 
-function Vec2:angle(v)
+function M:angle(v)
   -- angle value in rads.
   -- domain [-pi, pi]
   if v then
@@ -179,61 +179,61 @@ function Vec2:angle(v)
   return math.atan2(self.y, self.x)
 end
 
-Vec2.rotation = Vec2.angle
-Vec2.heading = Vec2.angle
+M.rotation = M.angle
+M.heading = M.angle
 
-function Vec2.distance(a, b)
+function M.distance(a, b)
   return math.sqrt((a.x - b.x) ^ 2 + (a.y - b.y) ^ 2)
 end
 
-function Vec2.dot(a, b) -- cos
+function M.dot(a, b) -- cos
   return a.x * b.x + a.y * b.y
 end
 
-Vec2.scalar = Vec2.dot
+M.scalar = M.dot
 
-function Vec2.det(a, b) -- sin
+function M.det(a, b) -- sin
   return a.x * b.y - a.y * b.x
 end
 
-Vec2.determinant = Vec2.det
+M.determinant = M.det
 
-function Vec2.toRad(a)
+function M.toRad(a)
   return a * 180 / math.pi
 end
 
-Vec2.toRadians = Vec2.toRad
+M.toRadians = M.toRad
 
-function Vec2:normalize()
+function M:normalize()
   return self:setMagnitude(1)
 end
 
-function Vec2:limit(k)
+function M:limit(k)
   if self:magnitude() > k then
     self:setMagnitude(k)
   end
   return self
 end
 
-function Vec2.direction(val)
+function M.direction(val)
   -- if val is a num, we take it as the angle in rads
   if type(val) == 'number' then
-    return Vec2:fromAngle(val)
+    return M:fromAngle(val)
   end
   -- else, we expect it to be a Vec2
   return val:normalize()
 end
 
-function Vec2:perpendicular(dir, m)
+function M:perpendicular(dir, m)
   m = m or 1
   local dx = dir.x - self.x
   local dy = dir.y - self.y
-  return Vec2:new(dy, -dx):setMagnitude(m) + self,
-      Vec2:new(-dy, dx):setMagnitude(m) + self
+  return M:new(dy, -dx):setMagnitude(m) + self,
+      M:new(-dy, dx):setMagnitude(m) + self
 end
 
-function Vec2.lerp(a, b, t)
+function M.lerp(a, b, t)
   return a * (1 - t) + b * t
 end
 
-return Vec2
+return M
