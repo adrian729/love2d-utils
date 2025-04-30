@@ -1,7 +1,7 @@
 -- Base code and idea was taken from https://github.com/argonautcode/animal-proc-anim
 local Vec2 = require 'vec2'
 
-local Chain = {}
+local M = {}
 
 local function initJoints(origin, link_size, joint_count)
   local joints = { origin }
@@ -19,7 +19,7 @@ local function initAngles(joint_count)
   return angles
 end
 
-function Chain:new(origin, joint_count, link_size, angle_constraint, speed, scale)
+function M:new(origin, joint_count, link_size, angle_constraint, speed, scale)
   origin = origin or Vec2:new(0, 0)
   joint_count = joint_count or 2
   scale = scale or 1
@@ -40,9 +40,9 @@ function Chain:new(origin, joint_count, link_size, angle_constraint, speed, scal
   )
 end
 
-function Chain:__index(key)
+function M:__index(key)
   if key == nil then
-    return Chain
+    return M
   end
 
   if type(key) == 'number' then
@@ -53,10 +53,10 @@ function Chain:__index(key)
     return
   end
 
-  return Chain[key]
+  return M[key]
 end
 
-function Chain:__tostring()
+function M:__tostring()
   local chain_str = '['
   for i, joint in ipairs(self.joints) do
     chain_str = chain_str .. tostring(joint) .. '/' .. tostring(self.angles[i])
@@ -67,7 +67,7 @@ function Chain:__tostring()
   return chain_str .. ']'
 end
 
-function Chain:draw()
+function M:draw()
   for i = 1, #self.joints - 1, 1 do
     local start_joint = self.joints[i]
     local end_joint = self.joints[i + 1]
@@ -88,7 +88,7 @@ local function simplifyAngle(angle)
   local two_pi = 2 * math.pi
   return angle - math.floor(angle / two_pi) * two_pi
 end
-Chain.simplifyAngle = simplifyAngle
+M.simplifyAngle = simplifyAngle
 
 local function relativeAngleDiff(angle, anchor)
   -- i.e. How many radians do you need to turn the angle to match the anchor?
@@ -98,7 +98,7 @@ local function relativeAngleDiff(angle, anchor)
   -- to worry about the "seam" between 0 and 2pi.
   return math.pi - simplifyAngle(angle + math.pi - anchor)
 end
-Chain.relativeAngleDiff = relativeAngleDiff
+M.relativeAngleDiff = relativeAngleDiff
 
 local function constrainAngle(angle, anchor, constraint)
   -- Constrain the angle to be within a certain range of the anchor
@@ -111,20 +111,20 @@ local function constrainAngle(angle, anchor, constraint)
   end
   return simplifyAngle(anchor + constraint)
 end
-Chain.constrainAngle = constrainAngle
+M.constrainAngle = constrainAngle
 
 local function constrainDistance(pos, anchor, constraint)
   -- Constrain the vector to be at a certain range of the anchor
   return anchor + (pos - anchor):setMagnitude(constraint)
 end
-Chain.constrainDistance = constrainDistance
+M.constrainDistance = constrainDistance
 
 local function deltaTarget(target, origin, mag)
   return (target - origin):setMagnitude(mag) + origin
 end
-Chain.deltaTarget = deltaTarget
+M.deltaTarget = deltaTarget
 
-function Chain:resolve(pos, dt, is_scaling)
+function M:resolve(pos, dt, is_scaling)
   is_scaling = is_scaling or false
   -- TODO smooth movement if rotation angle is to big
   if
@@ -145,7 +145,7 @@ function Chain:resolve(pos, dt, is_scaling)
   end
 end
 
-function Chain:setScale(scale)
+function M:setScale(scale)
   if self.scale == scale then
     return
   end
@@ -156,7 +156,7 @@ function Chain:setScale(scale)
   end
 end
 
-function Chain:fabrikResolve(pos, anchor)
+function M:fabrikResolve(pos, anchor)
   -- Forward pass
   self.joints[1] = pos
   for i = 2, #self.joints, 1 do
@@ -169,4 +169,4 @@ function Chain:fabrikResolve(pos, anchor)
   end
 end
 
-return Chain
+return M
