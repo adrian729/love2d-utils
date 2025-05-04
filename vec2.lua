@@ -1,12 +1,22 @@
--- Vec2 module to practice metatables and Lua
 -- Lua v5.1^
 local M = {}
+
+-- type overwrite
+local original_type = type
+type = function(obj)
+  local otype = original_type(obj)
+  if otype == "table" and getmetatable(obj) == M and M.__type then
+    return M.__type
+  end
+  return otype
+end
 
 function M:new(x, y)
   x = x or 0
   y = y or x
   return setmetatable(
     {
+      __type = 'Vec2',
       x = x,
       y = y,
     },
@@ -38,6 +48,7 @@ function M:__index(key)
   if type(key) ~= 'string' then
     return
   end
+
   if key == 'a' then
     return self.x
   elseif key == 'b' then
@@ -186,6 +197,8 @@ function M.distance(a, b)
   return math.sqrt((a.x - b.x) ^ 2 + (a.y - b.y) ^ 2)
 end
 
+M.dist = M.distance
+
 function M.dot(a, b) -- cos
   return a.x * b.x + a.y * b.y
 end
@@ -197,6 +210,12 @@ function M.det(a, b) -- sin
 end
 
 M.determinant = M.det
+
+function M.toDegs(a)
+  return a * math.pi / 180
+end
+
+M.toDegrees = M.toDegs
 
 function M.toRad(a)
   return a * 180 / math.pi
@@ -215,6 +234,8 @@ function M:limit(k)
   return self
 end
 
+M.lim = M.limit
+
 function M.direction(val)
   -- if val is a num, we take it as the angle in rads
   if type(val) == 'number' then
@@ -223,6 +244,8 @@ function M.direction(val)
   -- else, we expect it to be a Vec2
   return val:normalize()
 end
+
+M.dir = M.direction
 
 function M:perpendicular(dir, m)
   m = m or 1
@@ -235,5 +258,49 @@ end
 function M.lerp(a, b, t)
   return a * (1 - t) + b * t
 end
+
+function M:deltaTarget(target, m)
+  return (target - self):setMagnitude(m) + self
+end
+
+M.dTarget = M.deltaTarget
+
+function M:constrainDistance(anchor, distance)
+  return self - (self - anchor):setMagnitude(distance)
+end
+
+-- ANGLES - TODO: if enought methods, move to its own module
+
+local function simplifyAngle(angle)
+  return angle % (2 * math.pi)
+end
+
+M.simplifyAngle = simplifyAngle
+
+local function relativeAngleDiff(angle, target)
+  -- i.e. How many radians do you need to turn the angle to match the target angle?
+
+  -- Since angles are represented by values in [0, 2pi), it's helpful to rotate
+  -- the coordinate space such that PI is at the target. That way we don't have
+  -- to worry about the "seam" between 0 and 2pi.
+  return math.pi - simplifyAngle(angle + math.pi - target)
+end
+
+M.relativeAngleDiff = relativeAngleDiff
+
+local function constrainAngle(angle, target, constraint)
+  -- Constrain the angle to be within a certain range of the target angle
+  local relative_diff = relativeAngleDiff(angle, target)
+  if math.abs(relative_diff) <= constraint then
+    return simplifyAngle(angle)
+  end
+  if relative_diff > constraint then
+    return simplifyAngle(target - constraint)
+  end
+  return simplifyAngle(target + constraint)
+end
+
+M.constrainAngle = constrainAngle
+
 
 return M

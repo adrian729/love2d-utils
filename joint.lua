@@ -12,13 +12,13 @@ type = function(obj)
   return otype
 end
 
-function M:new(pos, link_size, angle)
+function M:new(pos, link_size, angle_constraint)
   return setmetatable(
     {
       __type = 'Joint',
       pos = pos or Vec2:new(),
       link_size = link_size or 0,
-      angle = angle
+      angle_constraint = angle_constraint
     },
     self
   )
@@ -29,16 +29,23 @@ function M:__index(key)
     return M
   end
 
-  if type(key) == 'number' then
-    return self.pos[key]
+  local pos_val = self.pos[key]
+  if pos_val ~= nil then
+    return pos_val
   end
 
   if type(key) ~= 'string' then
     return
   end
 
-  if key == 'x' or key == 'y' then
-    return self.pos[key]
+  if key == 'p' then
+    return self.pos
+  elseif key == 'link' then
+    return self.link_size
+  elseif key == 'size' then
+    return self.link_size
+  elseif key == 'angle' then
+    return self.angle_constraint
   end
 
   return M[key]
@@ -46,14 +53,14 @@ end
 
 function M:__tostring()
   local joint_str = '{' .. tostring(self.pos)
-  if self.angle then
-    joint_str = joint_str .. '/' .. tostring(self.angle)
+  if self.angle_constraint then
+    joint_str = joint_str .. '/' .. string.format('%.4f', self.angle_constraint)
   end
   joint_str = joint_str .. ', ' .. self.link_size .. '}'
   return joint_str
 end
 
-function M:update(dt)
+function M:update(_dt)
 end
 
 function M:draw()

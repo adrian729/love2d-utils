@@ -9,7 +9,7 @@ local scale
 function M:load()
   scale = 1
   chain_1 = Chain:new(Vec2:new(300, 300))
-  chain_2 = Chain:new(Vec2:new(500, 900), 128, 10, math.pi / 6, 350)
+  chain_2 = Chain:new(Vec2:new(500, 900), 20, 50, math.pi / 4, 350)
   print(tostring(chain_1))
   print(tostring(chain_2))
   print('Simplify angle between 0 and 2pi (' .. math.pi .. '): ' .. tostring(Chain.simplifyAngle(math.pi)))

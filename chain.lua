@@ -50,7 +50,7 @@ function M:__index(key)
   end
 
   if type(key) ~= 'string' then
-    return
+    return nil
   end
 
   return M[key]

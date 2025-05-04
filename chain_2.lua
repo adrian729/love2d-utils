@@ -1,4 +1,5 @@
 local Joint = require 'joint'
+local Vec2 = require 'vec2'
 
 -- TODO: add angle constraints
 local M = {}
@@ -13,23 +14,22 @@ type = function(obj)
   return otype
 end
 
-local function initJoints(joints)
-  if joints then
-    return joints
+local function initJoints(joints, joint_count, link_size, angle_constraint)
+  if not joints then
+    joints = {}
+    for _ = joint_count, link_size, angle_constraint do
+      table.insert(joints, Joint:new(nil, link_size or 10, angle_constraint))
+    end
   end
-
-  return {
-    Joint:new(nil, 10),
-    Joint:new(nil, 10)
-  }
+  return joints
 end
 
-function M:new(joints, root, target)
+function M:new(joints, anchor, target)
   return setmetatable(
     {
       __type = 'Chain',
       joints = initJoints(joints),
-      root = root,
+      anchor = anchor,
       target = target
     },
     self
@@ -59,15 +59,25 @@ function M:__tostring()
   end
 
   chain_str = chain_str .. ' ]'
-  if self.root then
-    chain_str = chain_str .. ' - ' .. tostring(self.root)
+  if self.anchor then
+    chain_str = chain_str .. ' - ' .. tostring(self.anchor)
   end
 
   return chain_str
 end
 
+local function constrainAngle(position, origin, target, angle_constraint)
+  return Vec2:fromAngle(
+    Vec2.constrainAngle(
+      (position - origin):angle(),
+      (target - origin):angle(),
+      angle_constraint
+    )
+  ) + origin
+end
+
 local function fabrikForward(self)
-  if not self.target then
+  if not self.target or self.joints[1].pos:distance(self.target) < 1 then
     return
   end
 
@@ -75,25 +85,35 @@ local function fabrikForward(self)
   for i, curr in ipairs(self.joints) do
     if i < #self.joints then
       local next = self.joints[i + 1]
-      next.pos = curr.pos - (curr.pos - next.pos):setMag(curr.link_size)
+      if curr.angle_constraint and i > 1 then
+        local prev = self.joints[i - 1]
+        local prev_angle = (prev.pos - curr.pos):angle()
+        local next_angle = (curr.pos - next.pos):angle()
+        next.pos = curr.pos - Vec2:fromAngle(
+          Vec2.constrainAngle(next_angle, prev_angle, curr.angle_constraint)
+        )
+      end
+      next.pos = curr.pos:constrainDistance(next.pos, curr.link_size)
     end
   end
 end
 
 local function fabrikBackward(self)
-  if not self.root then
+  if not self.anchor
+      or self.joints[#self.joints].pos:distance(self.anchor) < 1
+  then
     return
   end
 
-  self.joints[#self.joints].pos = self.root
+  self.joints[#self.joints].pos = self.anchor
   for i = #self.joints - 1, 1, -1 do
     local curr = self.joints[i]
-    local prev = self.joints[i + 1]
-    curr.pos = prev.pos + (curr.pos - prev.pos):setMag(curr.link_size)
+    local next = self.joints[i + 1]
+    curr.pos = next.pos:constrainDistance(curr.pos, curr.link_size)
   end
 end
 
-function M:update(dt)
+function M:update(_dt)
   fabrikForward(self)
   fabrikBackward(self)
 end
@@ -101,8 +121,8 @@ end
 function M:draw()
   local r = 3
   love.graphics.setColor(1, 0, 0)
-  if self.root then
-    love.graphics.circle('line', self.root.x, self.root.y, r)
+  if self.anchor then
+    love.graphics.circle('line', self.anchor.x, self.anchor.y, r)
   end
 
   for i, joint in ipairs(self.joints) do
