@@ -60,10 +60,4 @@ function M:__tostring()
   return joint_str
 end
 
-function M:update(_dt)
-end
-
-function M:draw()
-end
-
 return M

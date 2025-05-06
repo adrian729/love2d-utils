@@ -1,7 +1,6 @@
 local Joint = require 'joint'
 local Vec2 = require 'vec2'
 
--- TODO: add angle constraints
 local M = {}
 
 -- type overwrite
@@ -17,7 +16,7 @@ end
 local function initJoints(joints, joint_count, link_size, angle_constraint)
   if not joints then
     joints = {}
-    for _ = joint_count, link_size, angle_constraint do
+    for _ = 1, joint_count or 3, 1 do
       table.insert(joints, Joint:new(nil, link_size or 10, angle_constraint))
     end
   end
@@ -29,6 +28,18 @@ function M:new(joints, anchor, target)
     {
       __type = 'Chain',
       joints = initJoints(joints),
+      anchor = anchor,
+      target = target
+    },
+    self
+  )
+end
+
+function M:newUniform(target, anchor, joint_count, link_size, angle_constraint)
+  return setmetatable(
+    {
+      __type = 'Chain',
+      joints = initJoints(nil, joint_count, link_size, angle_constraint),
       anchor = anchor,
       target = target
     },
@@ -66,14 +77,10 @@ function M:__tostring()
   return chain_str
 end
 
-local function constrainAngle(position, origin, target, angle_constraint)
-  return Vec2:fromAngle(
-    Vec2.constrainAngle(
-      (position - origin):angle(),
-      (target - origin):angle(),
-      angle_constraint
-    )
-  ) + origin
+function M:setScale(scale)
+  for _, joint in ipairs(self.joints) do
+    joint.link_size = scale * joint.link_size
+  end
 end
 
 local function fabrikForward(self)
@@ -113,7 +120,7 @@ local function fabrikBackward(self)
   end
 end
 
-function M:update(_dt)
+function M:update()
   fabrikForward(self)
   fabrikBackward(self)
 end
