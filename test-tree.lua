@@ -1,21 +1,35 @@
 local M = {}
 
 local Tree = require 'tree'
+local Vec2 = require 'vec2'
 
-local tree_1, tree_2
+local trees
 
 function M:load()
   local vw = love.graphics.getWidth()
+  local vh = love.graphics.getHeight()
 
-  tree_1 = Tree:new(12, vw / 2.1)
-  print(tree_1)
+  trees = {}
+  for _ = 1, love.math.random(10, 20) do
+    local t = Tree:new({
+      attrs = {
+        pos = Vec2:new(love.math.random(10, vw - 10), vh)
+      }
+    })
+    t:expand(love.math.random(12, 14))
+    table.insert(trees, t)
+  end
 end
 
 function M:update(_dt)
 end
 
 function M:draw()
-  tree_1:draw()
+  for i, t in ipairs(trees) do
+    t:draw()
+    print('T_' .. i .. ': ' .. t.str)
+    print()
+  end
 end
 
 return M

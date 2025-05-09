@@ -269,6 +269,10 @@ function M:constrainDistance(anchor, distance)
   return self - (self - anchor):setMagnitude(distance)
 end
 
+function M:spread()
+  return self.x, self.y
+end
+
 -- ANGLES - TODO: if enought methods, move to its own module
 
 local function simplifyAngle(angle)

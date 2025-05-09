@@ -1,3 +1,4 @@
+local Utils = require 'utils'
 local Vec2 = require 'vec2'
 local Color = require 'color'
 
@@ -13,50 +14,78 @@ type = function(obj)
   return otype
 end
 
-local function expand(str)
-  local forward_prob = 0.4
-  local new_str = ''
-  for i = 1, #str do
-    local char = str:sub(i, i)
-    if char == 'S' then
-      char = 'FB'
-    elseif char == 'F' then
-      if love.math.random() < forward_prob then
-        char = 'FF'
-      end
-    elseif char == 'B' then
-      local branching = love.math.random()
-      local bi_branch_prob = 0.45
-      if branching < bi_branch_prob then
-        char = '[llFB][rFB]'
-      elseif branching < 2 * bi_branch_prob then
-        char = '[lFB][rrFB]'
-      else
-        char = '[llFB][cFB][rrFB]'
-      end
-    end
-    new_str = new_str .. char
-  end
-
-  return new_str
+local function _setProbs(probs)
+  probs = probs or {}
+  local branch_left = probs.branch_left or 0.5
+  local branch_right = probs.branch_right or (2 * branch_left)
+  return Utils.withDefaults(
+    probs,
+    {
+      no_expand = 0.1,
+      forward = 0.4,
+      branch_left = branch_left,
+      branch_right = branch_right,
+      branch_center = (1.0 - branch_left - branch_right)
+    }
+  )
 end
 
-function M:new(expand_k, start)
+local function _setColor(color)
+  color = color or {}
+  return {
+    hue =
+        Utils.withDefaults(
+          color.hue or {},
+          {
+            hue = 0,
+            k = 0,
+            iters_k = 10
+          }
+        ),
+    brightness =
+        Utils.withDefaults(
+          color.brightness or {},
+          {
+            brightness = 10,
+            k = 1.2,
+            iters_k = 0
+          }
+        )
+
+  }
+end
+local function _setAttrs(attrs)
   local vw = love.graphics.getWidth()
+  local vh = love.graphics.getHeight()
 
-  expand_k = expand_k or 8
-  start = start or vw / 2
+  attrs = attrs or {}
+  return {
+    pos = attrs.pos or Vec2:new(vw / 2, vh),
+    angle = (attrs.angle or 0) - math.pi,
+    branch = Utils.withDefaults(
+      attrs.branch or {},
+      {
+        length = 2,
+        width = 15,
+        width_k = 0.8,
+        angle = 0.1 * math.pi,
+        angle_k = 0.95,
+      }
+    )
+  }
+end
 
-  local str = 'S'
-  for _ = 1, expand_k, 1 do
-    str = expand(str)
-  end
+function M:new(opts)
+  opts = opts or {}
 
   return setmetatable(
     {
       __type = 'Tree',
-      str = str,
-      start = start
+      str = opts.str or 'S',
+      iterations = 0,
+      probs = _setProbs(opts.probs),
+      color = _setColor(opts.color),
+      attrs = _setAttrs(opts.attrs)
     },
     self
   )
@@ -78,46 +107,92 @@ function M:__tostring()
   return self.str
 end
 
+function M:setProbs(probs)
+  self.probs = _setProbs(probs)
+end
+
+function M:setColor(color)
+  self.color = _setColor(color)
+end
+
+function M:setAttrs(attrs)
+  self.attrs = _setAttrs(attrs)
+end
+
+function M:expand(iters)
+  local probs = self.probs
+
+  for _ = 1, iters do
+    local new_str = ''
+    for i = 1, #self.str do
+      local rand = love.math.random()
+      local char = self.str:sub(i, i)
+      if char == 'S' then
+        char = 'FB'
+      elseif rand < probs.no_expand then -- don't expand
+      elseif char == 'F' then
+        if rand < probs.forward then
+          char = 'FF'
+        end
+      elseif char == 'B' then
+        if rand < probs.branch_left then
+          char = '[llFB][rFB]'
+        elseif rand < probs.branch_right then
+          char = '[lFB][rrFB]'
+        elseif rand < probs.branch_center then
+          char = '[llFB][cFB][rrFB]'
+        end
+      end
+      new_str = new_str .. char
+    end
+
+    self.str = new_str
+  end
+
+  self.iterations = self.iterations + iters
+end
+
 function M:draw()
-  local vw = love.graphics.getWidth()
-  local vh = love.graphics.getHeight()
+  local branch = self.attrs.branch
+  local branch_width = branch.width
+  local branch_angle = branch.angle
 
-  local l = 2
-  local angle = 0.1 * math.pi
+  local hue_opts = self.color.hue
+  local hue = hue_opts.hue
+  local hue_k = hue_opts.iters_k / self.iterations + hue_opts.k
 
-  local lineWidth = 15
-  local lineWidth_k = 0.8
-  local hue = 0
-  local hue_k = 11
-  local brightness = 10
-  local brightness_k = 1.2
+  local brightness_opts = self.color.brightness
+  local brightness = brightness_opts.brightness
+  local brightness_k = brightness_opts.iters_k / self.iterations + brightness_opts.k
 
   love.graphics.push()
   love.graphics.setColor(1, 0, 0)
-  love.graphics.translate(self.start, vh - 1)
-  love.graphics.rotate(-math.pi)
+  love.graphics.translate(self.attrs.pos:spread())
+  love.graphics.rotate(self.attrs.angle)
   for i = 1, #self.str do
     local char = self.str:sub(i, i)
     if char == 'F' then
-      love.graphics.setLineWidth(lineWidth)
       love.graphics.setColor(Color.hsl2rgb(hue, 100, brightness))
-      love.graphics.line(0, 0, 0, l)
-      love.graphics.translate(0, l)
+      love.graphics.setLineWidth(branch_width)
+      love.graphics.line(0, 0, 0, branch.length)
+      love.graphics.translate(0, branch.length)
     elseif char == 'l' then
-      love.graphics.rotate(-angle)
+      love.graphics.rotate(-branch_angle)
     elseif char == 'c' then
       love.graphics.rotate(0)
     elseif char == 'r' then
-      love.graphics.rotate(angle)
+      love.graphics.rotate(branch_angle)
     elseif char == '[' then -- enter branch
       love.graphics.push()
-      lineWidth = lineWidth_k * lineWidth
+      branch_angle = branch_angle * branch.angle_k
+      branch_width = branch_width * branch.width_k
       hue = (hue + hue_k) % 360
-      brightness = brightness_k * brightness
+      brightness = brightness * brightness_k
     elseif char == ']' then -- exit branch
-      lineWidth = (1.0 / lineWidth_k) * lineWidth
+      branch_angle = branch_angle / branch.angle_k
+      branch_width = branch_width / branch.width_k
       hue = (hue - hue_k + 360) % 360
-      brightness = (1.0 / brightness_k) * brightness
+      brightness = brightness / brightness_k
       love.graphics.pop()
     end
   end
