@@ -45,4 +45,8 @@ function M.withDefaults(t, defaults)
   return t
 end
 
+function M.mapValue(val, start_1, end_1, start_2, end_2)
+  return (val - start_1) * (end_2 - start_2) / (end_1 - start_1) + start_2
+end
+
 return M

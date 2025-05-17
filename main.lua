@@ -2,9 +2,13 @@ _G.love = love
 _G.debug = false
 _G.Test = nil
 
+_G.lick = require 'lick'
+lick.reset = true
+
 local module_name = nil
 
 function love.load(arg)
+  arg = arg or {}
   for _, v in pairs(arg) do
     if v == '--debug' or v == '--d' then
       _G.debug = true

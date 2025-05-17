@@ -35,19 +35,30 @@ function M:__tostring()
   return 'Color module'
 end
 
-local function hue2rgb(p, q, t)
-  if t < 0 then t = t + 1 end
-  if t > 1 then t = t - 1 end
-  if t < 1 / 6 then return p + (q - p) * 6 * t end
-  if t < 1 / 2 then return q end
-  if t < 2 / 3 then return p + (q - p) * (2 / 3 - t) * 6 end
-  return p;
+function M.hue2rgb(p, q, t)
+  if t < 0 then
+    t = t + 1
+  end
+  if t > 1 then
+    t = t - 1
+  end
+
+  if t < 1 / 6 then
+    return p + (q - p) * 6 * t
+  end
+  if t < 1 / 2 then
+    return q
+  end
+  if t < 2 / 3 then
+    return p + (q - p) * (2 / 3 - t) * 6
+  end
+
+  return p
 end
 
-M.hue2rgb = hue2rgb
-M.hueToRgb = hue2rgb
+M.hueToRgb = M.hue2rgb
 
-local function hsl2rgb(h, s, l)
+function M.hsl2rgb(h, s, l)
   h = h / 360
   s = s / 100
   l = l / 100
@@ -56,18 +67,53 @@ local function hsl2rgb(h, s, l)
     return l, l, l -- achromatic
   end
 
-  local r, g, b;
-  local q = l < 0.5 and l * (1 + s) or l + s - l * s;
-  local p = 2 * l - q;
-  r = hue2rgb(p, q, h + 1 / 3);
-  g = hue2rgb(p, q, h);
-  b = hue2rgb(p, q, h - 1 / 3);
+  local q
+  if l < 0.5 then
+    q = l * (1 + s)
+  else
+    q = l + s - l * s
+  end
+  local p = 2 * l - q
 
+  local r = M.hue2rgb(p, q, h + 1 / 3);
+  local g = M.hue2rgb(p, q, h);
+  local b = M.hue2rgb(p, q, h - 1 / 3);
   local a = 1
+
   return r, g, b, a
 end
 
-M.hsl2rgb = hsl2rgb
-M.hslToRgb = hsl2rgb
+M.hslToRgb = M.hsl2rgb
+
+function M.hsv2rgb(h, s, v)
+  h = h / 360
+  s = s / 100
+  v = v / 100
+
+  local i = math.floor(h * 6)
+  local f = h * 6 - i
+  local p = v * (1 - s)
+  local q = v * (1 - f * s)
+  local t = v * (1 - (1 - f) * s)
+
+  local m = i % 6
+  if m == 0 then
+    return v, t, p, 1
+  elseif m == 1 then
+    return q, v, p, 1
+  elseif m == 2 then
+    return p, v, t
+  elseif m == 3 then
+    return p, q, v
+  elseif m == 4 then
+    return t, p, v
+  elseif m == 5 then
+    return v, p, q
+  end
+
+  return 1, 1, 1, 1
+end
+
+M.hsvToRgb = M.hsv2rgb
 
 return M
