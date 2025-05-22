@@ -1,14 +1,19 @@
 _G.love = love
 _G.debug = false
-_G.Test = nil
+_G.Test = require 'tests'
 
-_G.lick = require 'lick'
-lick.reset = true
+_G.Lick = require 'lick'
+Lick.reset = true
 
-local module_name = nil
+_G.Suit = require 'suit'
+
+
+local test = Test:new()
 
 function love.load(arg)
   arg = arg or {}
+
+  local module_name = nil
   for _, v in pairs(arg) do
     if v == '--debug' or v == '--d' then
       _G.debug = true
@@ -18,24 +23,39 @@ function love.load(arg)
     end
   end
 
-  if not module_name then
-    print('Loading default')
-    module_name = 'test-fish'
-  end
+  test = Test:new(module_name)
 
-  print('Loading module ' .. module_name)
-  Test = require(module_name)
-  Test:load()
+  local font = love.graphics.newFont("NotoSansHans-Regular.otf", 20)
+  love.graphics.setFont(font)
 end
 
 function love.update(dt)
-  if Test then
-    Test:update(dt)
+  local vw = love.graphics.getWidth()
+  Suit.layout:reset(vw - 210, 5)
+  if Suit.Button("Close", Suit.layout:row(200, 32)).hit then
+    love.event.quit()
+  end
+
+  if test then
+    test:update(dt)
   end
 end
 
 function love.draw()
-  if Test then
-    Test:draw()
+  if test then
+    test:draw()
   end
+  Suit.draw()
+end
+
+function love.textedited(text, start, length)
+  Suit.textedited(text, start, length)
+end
+
+function love.textinput(t)
+  Suit.textinput(t)
+end
+
+function love.keypressed(key)
+  Suit.keypressed(key)
 end
