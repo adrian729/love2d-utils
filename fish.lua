@@ -1,5 +1,7 @@
-local Fish = {}
-Fish.__index = Fish
+local M = {}
+M.__index = M
+
+-- We swapped old chain with new chain module, which introduces breaking changes. We need to fix this things
 
 local Vec2 = require 'vec2'
 local Chain = require 'chain'
@@ -17,24 +19,25 @@ local function scaleBodyWidth(scale)
   return scaled_body_width
 end
 
-function Fish:new(origin, scale, speed)
+function M:new(origin, scale, speed)
   scale = scale or 1
   speed = speed or 200
   return setmetatable(
     {
       scale = scale,
-      spine = Chain:new(origin, 12, 64, math.pi / 8, speed, scale),
+      speed = speed,
+      spine = Chain:newUniform(origin, nil, 12, 64, math.pi / 8),
       body_width = scaleBodyWidth(scale),
     },
     self
   )
 end
 
-function Fish:distance(point)
+function M:distance(point)
   return self.spine.joints[1]:distance(point)
 end
 
-function Fish:setScale(scale)
+function M:setScale(scale)
   if self.scale == scale then
     return
   end
@@ -43,8 +46,9 @@ function Fish:setScale(scale)
   self.scale = scale
 end
 
-function Fish:resolve(target_pos, dt)
-  self.spine:resolve(target_pos, dt)
+function M:resolve(target, dt)
+  self.spine.target = self.spine.target:deltaTarget(target, self.speed * dt)
+  self.spine:update(dt)
 end
 
 local function getSidePoints(m, main_pos, secondary_pos)
@@ -74,7 +78,7 @@ local function createCurve(points)
 end
 
 local function paintPolygon(points, bg_color, color)
-  local color = color or bg_color
+  color = color or bg_color
 
   love.graphics.setColor(bg_color[1], bg_color[2], bg_color[3])
   local curve = createCurve(cleanupPoints(points))
@@ -157,19 +161,27 @@ local function drawBody(self)
   front = front:setMagnitude(self.body_width[1] + self.spine.link_size) + joints[2]
   table.insert(left, front)
   table.insert(right, front)
-  local front_left = Vec2:fromAngle(self.spine.angles[2] - math.pi / 8)
+  -- TODO: fix this
+  --local front_left = Vec2:fromAngle(self.spine.angles[2] - math.pi / 8)
+  local front_left = Vec2:fromAngle(math.pi / 8)
   front_left = front_left:setMagnitude(self.body_width[1])
   front_left = front_left + joints[1]
   table.insert(left, front_left)
-  local front_left_2 = Vec2:fromAngle(self.spine.angles[2] - math.pi / 4)
+  -- TODO: fix this
+  --local front_left_2 = Vec2:fromAngle(self.spine.angles[2] - math.pi / 4)
+  local front_left_2 = Vec2:fromAngle(math.pi / 4)
   front_left_2 = front_left_2:setMagnitude(self.body_width[1])
   front_left_2 = front_left_2 + joints[1]
   table.insert(left, front_left_2)
-  local front_right = Vec2:fromAngle(self.spine.angles[2] + math.pi / 8)
+  -- TODO: fix this
+  --local front_right = Vec2:fromAngle(self.spine.angles[2] + math.pi / 8)
+  local front_right = Vec2:fromAngle(math.pi / 8)
   front_right = front_right:setMagnitude(self.body_width[1])
   front_right = front_right + joints[1]
   table.insert(right, front_right)
-  local front_right_2 = Vec2:fromAngle(self.spine.angles[2] + math.pi / 4)
+  -- TODO: fix this
+  --local front_right_2 = Vec2:fromAngle(self.spine.angles[2] + math.pi / 4)
+  local front_right_2 = Vec2:fromAngle(math.pi / 4)
   front_right_2 = front_right_2:setMagnitude(self.body_width[1])
   front_right_2 = front_right_2 + joints[1]
   table.insert(right, front_right_2)
@@ -197,12 +209,16 @@ local function drawLateralFin(self, side, sign)
   local r_x = self.scale * 75
   local r_y = r_x / 2
   love.graphics.translate(side.x, side.y)
-  love.graphics.rotate(self.spine.angles[3] + sign * math.pi / 3)
+  -- TODO fix this
+  --love.graphics.rotate(self.spine:angles[3] + sign * math.pi / 3)
+  love.graphics.rotate(sign * math.pi / 3)
   love.graphics.setColor(fin_color[1], fin_color[2], fin_color[3])
   love.graphics.ellipse("fill", 0, 0, r_x, r_y)
   love.graphics.setColor(1, 1, 1)
   love.graphics.ellipse("line", 0, 0, r_x, r_y)
-  love.graphics.rotate(-self.spine.angles[3] - sign * math.pi / 3)
+  -- TODO fix this
+  --love.graphics.rotate(-self.spine.angles[3] - sign * math.pi / 3)
+  love.graphics.rotate(sign * math.pi / 3)
   love.graphics.translate(-side.x, -side.y)
 end
 
@@ -226,7 +242,7 @@ local function drawTail(self)
   table.insert(left, tail_1)
   table.insert(right, tail_2)
 
-  local tail_end = (joints[#joints] - joints[#joints - 1])
+  local tail_end = (joints[#joints].pos - joints[#joints - 1].pos)
   tail_end = tail_end:setMagnitude(self.body_width[#joints] + self.spine.link_size)
   tail_end = tail_end + joints[#joints - 1]
   table.insert(left, tail_end)
@@ -243,7 +259,7 @@ local function drawTail(self)
   paintPolygon(points, fin_color, { 1, 1, 1, })
 end
 
-function Fish:draw()
+function M:draw()
   drawLateralFins(self)
   drawTail(self)
   drawBody(self)
@@ -251,4 +267,4 @@ function Fish:draw()
   drawEyes(self)
 end
 
-return Fish
+return M

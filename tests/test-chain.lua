@@ -1,36 +1,55 @@
 local M = {}
 
-local Chain = require 'chain'
+local Chain = require 'chain_2'
+local Joint = require 'joint'
 local Vec2 = require 'vec2'
 
-local chain_1, chain_2
-local scale
+local chain_anchored, chain, default_chain
 
 function M:load()
-  scale = 1
-  chain_1 = Chain:new(Vec2:new(300, 300))
-  chain_2 = Chain:new(Vec2:new(500, 900), 20, 50, math.pi / 4, 350)
-  print(tostring(chain_1))
-  print(tostring(chain_2))
-  print('Simplify angle between 0 and 2pi (' .. math.pi .. '): ' .. tostring(Chain.simplifyAngle(math.pi)))
-  print('Simplify angle bigger than 2pi (5pi): ' .. tostring(Chain.simplifyAngle(5 * math.pi)))
-  print('Simplify angle bigger than 2pi (4pi): ' .. tostring(Chain.simplifyAngle(4 * math.pi)))
-  print('Simplify angle bigger than 2pi (4pi + 4): ' .. tostring(Chain.simplifyAngle(4 * math.pi + 4)))
-  print('Simplify angle smaller than 0 (-5pi): ' .. tostring(Chain.simplifyAngle(-5 * math.pi)))
-  print('Simplify angle smaller than 0 (4 -4pi): ' .. tostring(Chain.simplifyAngle(4 - 4 * math.pi)))
+  local vw = love.graphics.getWidth()
+  local vh = love.graphics.getHeight()
+
+  local anchor = Vec2:new(vw / 2, vh - 10)
+  local joints = {}
+  for i = 10, 100, 10 do
+    for _ = 1, 100 / i, 1 do
+      table.insert(
+        joints,
+        Joint:new(nil, i / 2, math.pi / 8)
+      )
+    end
+  end
+  local target = nil
+  chain_anchored = Chain:new(joints, anchor, target)
+
+  joints = {}
+  for _ = 1, 15, 1 do
+    table.insert(joints, Joint:new(nil, 25, math.pi / 3))
+  end
+  chain = Chain:new(joints, nil, target)
+
+  default_chain = Chain:new()
+  default_chain:setScale(10)
 end
 
 function M:update(dt)
   local mouse = Vec2:new(love.mouse.getPosition())
-  scale = scale + 0.0001
-  chain_2:setScale(scale)
-  chain_2:resolve(mouse, dt)
-  chain_1:setScale(scale)
+
+  chain_anchored.target = mouse
+  chain_anchored:update(dt)
+
+  chain.target = mouse
+  chain:update(dt)
+
+  default_chain.target = mouse
+  default_chain:update(dt)
 end
 
 function M:draw()
-  chain_1:draw()
-  chain_2:draw()
+  chain_anchored:draw()
+  chain:draw()
+  default_chain:draw()
 end
 
 return M

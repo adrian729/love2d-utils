@@ -1,7 +1,7 @@
 local M = {}
 
 local Vec2 = require 'vec2'
-local Fish = require 'fish'
+local Fish = require 'fish_2'
 
 local function initPositions(size, vw_min, vw_max, vh_min, vh_max)
   vw_min = vw_min or 0

@@ -26,8 +26,7 @@ function M:update(dt)
       food = Vec2:new(love.math.random(10, 1000), love.math.random(10, 700))
     end
   end
-  fish:resolve(mouse, speed * dt)
-  --fish:resolve(food, speed * dt)
+  fish:resolve(mouse, dt)
 end
 
 function M:draw()
