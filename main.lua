@@ -31,8 +31,8 @@ end
 
 function love.update(dt)
   local vw = love.graphics.getWidth()
-  Suit.layout:reset(vw - 210, 5)
-  if Suit.Button("Close", Suit.layout:row(200, 32)).hit then
+  Suit.layout:reset(vw - 36, 4)
+  if Suit.Button("X", Suit.layout:row(32, 32)).hit then
     love.event.quit()
   end
 

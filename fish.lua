@@ -34,7 +34,7 @@ function M:new(origin, scale, speed)
 end
 
 function M:distance(point)
-  return self.spine.joints[1]:distance(point)
+  return self.spine[1]:distance(point)
 end
 
 function M:setScale(scale)
@@ -157,33 +157,33 @@ local function drawBody(self)
   local left = {}
   local right = {}
 
-  local front = (joints[1] - joints[2])
-  front = front:setMagnitude(self.body_width[1] + self.spine.link_size) + joints[2]
+  local front = (joints[1].pos - joints[2].pos)
+  front = front:setMagnitude(self.body_width[1] + self.spine[1].link_size) + joints[2].pos
   table.insert(left, front)
   table.insert(right, front)
   -- TODO: fix this
   --local front_left = Vec2:fromAngle(self.spine.angles[2] - math.pi / 8)
   local front_left = Vec2:fromAngle(math.pi / 8)
   front_left = front_left:setMagnitude(self.body_width[1])
-  front_left = front_left + joints[1]
+  front_left = front_left + joints[1].pos
   table.insert(left, front_left)
   -- TODO: fix this
   --local front_left_2 = Vec2:fromAngle(self.spine.angles[2] - math.pi / 4)
   local front_left_2 = Vec2:fromAngle(math.pi / 4)
   front_left_2 = front_left_2:setMagnitude(self.body_width[1])
-  front_left_2 = front_left_2 + joints[1]
+  front_left_2 = front_left_2 + joints[1].pos
   table.insert(left, front_left_2)
   -- TODO: fix this
   --local front_right = Vec2:fromAngle(self.spine.angles[2] + math.pi / 8)
   local front_right = Vec2:fromAngle(math.pi / 8)
   front_right = front_right:setMagnitude(self.body_width[1])
-  front_right = front_right + joints[1]
+  front_right = front_right + joints[1].pos
   table.insert(right, front_right)
   -- TODO: fix this
   --local front_right_2 = Vec2:fromAngle(self.spine.angles[2] + math.pi / 4)
   local front_right_2 = Vec2:fromAngle(math.pi / 4)
   front_right_2 = front_right_2:setMagnitude(self.body_width[1])
-  front_right_2 = front_right_2 + joints[1]
+  front_right_2 = front_right_2 + joints[1].pos
   table.insert(right, front_right_2)
 
   for i = 1, #joints - 2, 1 do
@@ -243,7 +243,7 @@ local function drawTail(self)
   table.insert(right, tail_2)
 
   local tail_end = (joints[#joints].pos - joints[#joints - 1].pos)
-  tail_end = tail_end:setMagnitude(self.body_width[#joints] + self.spine.link_size)
+  tail_end = tail_end:setMagnitude(self.body_width[#joints] + self.spine[#joints].link_size)
   tail_end = tail_end + joints[#joints - 1]
   table.insert(left, tail_end)
 

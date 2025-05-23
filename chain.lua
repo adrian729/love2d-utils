@@ -52,6 +52,10 @@ function M:__index(key)
     return M
   end
 
+  if type(key) == 'number' then
+    return self.joints[key]
+  end
+
   if type(key) ~= 'string' then
     return
   end
