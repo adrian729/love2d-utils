@@ -10,10 +10,12 @@ type = function(obj)
 end
 
 function M:new(module_name)
-  if module_name == nil then
-    print('Loading default')
+  if not module_name then
+    print 'No test module selected.'
+    return
   end
-  module_name = module_name or 'test-fish'
+
+  module_name = module_name
 
   print('Loading module ' .. module_name)
   local test = require('tests/' .. module_name)

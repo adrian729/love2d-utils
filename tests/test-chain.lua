@@ -1,6 +1,6 @@
 local M = {}
 
-local Chain = require 'chain_2'
+local Chain = require 'chain'
 local Joint = require 'joint'
 local Vec2 = require 'vec2'
 
@@ -16,18 +16,31 @@ function M:load()
     for _ = 1, 100 / i, 1 do
       table.insert(
         joints,
-        Joint:new(nil, i / 2, math.pi / 8)
+        Joint:new({
+          link_size = i / 2,
+          angle_constraint = math.pi / 8
+        })
       )
     end
   end
   local target = nil
-  chain_anchored = Chain:new(joints, anchor, target)
+  chain_anchored = Chain:new({
+    joints = joints,
+    anchor = anchor,
+    target = target
+  })
 
   joints = {}
   for _ = 1, 15, 1 do
-    table.insert(joints, Joint:new(nil, 25, math.pi / 3))
+    table.insert(
+      joints,
+      Joint:new({
+        link_size = 25,
+        angle_constraint = math.pi / 3
+      })
+    )
   end
-  chain = Chain:new(joints, nil, target)
+  chain = Chain:new({ joints = joints, target = target })
 
   default_chain = Chain:new()
   default_chain:setScale(10)

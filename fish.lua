@@ -1,14 +1,22 @@
 local M = {}
 M.__index = M
 
+-- type overwrite
+local original_type = type
+type = function(obj)
+  local otype = original_type(obj)
+  if otype == "table" and getmetatable(obj) == M and M.__type then
+    return M.__type
+  end
+  return otype
+end
+
 -- We swapped old chain with new chain module, which introduces breaking changes. We need to fix this things
 
 local Vec2 = require 'vec2'
 local Chain = require 'chain'
 local Splines = require 'splines'
 
-local body_color = { 58 / 255, 124 / 255, 165 / 255 }
-local fin_color = { 129 / 255, 195 / 255, 215 / 255 }
 local body_width = { 68, 81, 84, 83, 77, 64, 51, 38, 32, 19, 19, 19 }
 
 local function scaleBodyWidth(scale)
@@ -19,18 +27,33 @@ local function scaleBodyWidth(scale)
   return scaled_body_width
 end
 
-function M:new(origin, scale, speed)
-  scale = scale or 1
-  speed = speed or 200
-  return setmetatable(
+function M:new(opts)
+  opts = opts or {}
+
+  local scale = opts.scale or 1
+  local speed = opts.speed or 200
+
+  local fish = setmetatable(
     {
-      scale = scale,
+      __type = 'Fish',
+      scale = 1,
       speed = speed,
-      spine = Chain:newUniform(origin, nil, 12, 64, math.pi / 8),
-      body_width = scaleBodyWidth(scale),
+      spine = Chain:new({
+        target = opts.origin,
+        joint_count = 12,
+        link_size = 64,
+        angle_constraint = math.pi / 8,
+      }),
+      body_width = body_width,
+      body_color = opts.body_color or { 58 / 255, 124 / 255, 165 / 255 },
+      fin_color = opts.fine_color or { 129 / 255, 195 / 255, 215 / 255 }
     },
     self
   )
+
+  fish:setScale(scale)
+
+  return fish
 end
 
 function M:distance(point)
@@ -38,23 +61,26 @@ function M:distance(point)
 end
 
 function M:setScale(scale)
+  scale = scale or 1
   if self.scale == scale then
     return
   end
-  self.spine:setScale(scale)
+
+  self.spine:setScale(scale / self.scale)
   self.body_width = scaleBodyWidth(scale)
   self.scale = scale
 end
 
-function M:resolve(target, dt)
-  self.spine.target = self.spine.target:deltaTarget(target, self.speed * dt)
-  self.spine:update(dt)
+function M:setTarget(target)
+  self.spine.target = target
 end
 
-local function getSidePoints(m, main_pos, secondary_pos)
-  local dx = secondary_pos.x - main_pos.x
-  local dy = secondary_pos.y - main_pos.y
-  return Vec2:new(-dy, dx):setMagnitude(m) + main_pos, Vec2:new(dy, -dx):setMagnitude(m) + main_pos
+function M:setTargetAtSpeed(target, dt)
+  self.spine.target = self.spine.target:deltaTarget(target, self.speed * dt)
+end
+
+function M:update(dt)
+  self.spine:update(dt)
 end
 
 local function cleanupPoints(points)
@@ -68,27 +94,27 @@ local function cleanupPoints(points)
   return new_points
 end
 
-local function createCurve(points)
-  local curve = {}
+local function flattenPoints(points)
+  local flat_points = {}
   for _, point in ipairs(points) do
-    table.insert(curve, point.x)
-    table.insert(curve, point.y)
+    table.insert(flat_points, point.x)
+    table.insert(flat_points, point.y)
   end
-  return curve
+  return flat_points
 end
 
 local function paintPolygon(points, bg_color, color)
   color = color or bg_color
 
   love.graphics.setColor(bg_color[1], bg_color[2], bg_color[3])
-  local curve = createCurve(cleanupPoints(points))
-  local triangles = love.math.triangulate(curve)
+  local positions = flattenPoints(cleanupPoints(points))
+  local triangles = love.math.triangulate(positions)
   for _, triangle in ipairs(triangles) do
     love.graphics.polygon('fill', triangle)
   end
 
   love.graphics.setColor(color[1], color[2], color[3])
-  love.graphics.line(curve)
+  love.graphics.line(positions)
 end
 
 local function drawDorsalFin(self)
@@ -100,7 +126,7 @@ local function drawDorsalFin(self)
 
   table.insert(left, joints[start_idx])
   table.insert(right, joints[start_idx])
-  local side_r, side_l = joints[start_idx]:perpendicular(
+  local side_r, side_l = joints[start_idx]:orthogonal(
     joints[start_idx + 1],
     0.02 * self.body_width[start_idx]
   )
@@ -108,7 +134,7 @@ local function drawDorsalFin(self)
   table.insert(right, side_r)
 
   for i = start_idx + 1, end_idx - 1, 1 do
-    side_r, side_l = joints[i]:perpendicular(
+    side_r, side_l = joints[i]:orthogonal(
       joints[i + 1],
       0.1 * self.body_width[i]
     )
@@ -116,7 +142,7 @@ local function drawDorsalFin(self)
     table.insert(right, side_r)
   end
 
-  side_r, side_l = joints[end_idx]:perpendicular(
+  side_r, side_l = joints[end_idx]:orthogonal(
     joints[end_idx + 1],
     0.03 * self.body_width[end_idx]
   )
@@ -134,19 +160,19 @@ local function drawDorsalFin(self)
   end
 
   local points = Splines:new(shape):render({ detail = 200, type = 'v2' })
-  paintPolygon(points, fin_color, { 1, 1, 1, })
+  paintPolygon(points, self.fin_color, { 1, 1, 1 })
 end
 
 local function drawEyes(self)
   local joints = self.spine.joints
 
   local eye_size = 24 * self.scale
-  local eye_left, eye_right = getSidePoints(self.body_width[1] - 0.6 * eye_size, joints[1], joints[2])
+  local eye_right, eye_left = joints[1]:orthogonal(joints[2], self.body_width[1] - 0.6 * eye_size)
   love.graphics.setColor(0.7, 0.7, 0.7)
   love.graphics.circle("fill", eye_left.x, eye_left.y, eye_size)
   love.graphics.circle("fill", eye_right.x, eye_right.y, eye_size)
   local pupil_size = 18 * self.scale
-  local pupil_left, pupil_right = getSidePoints(self.body_width[1] - 0.4 * eye_size, joints[1], joints[2])
+  local pupil_left, pupil_right = joints[1]:orthogonal(joints[2], self.body_width[1] - 0.4 * eye_size)
   love.graphics.setColor(0.05, 0.05, 0.05)
   love.graphics.circle("fill", pupil_left.x, pupil_left.y, pupil_size)
   love.graphics.circle("fill", pupil_right.x, pupil_right.y, pupil_size)
@@ -161,35 +187,28 @@ local function drawBody(self)
   front = front:setMagnitude(self.body_width[1] + self.spine[1].link_size) + joints[2].pos
   table.insert(left, front)
   table.insert(right, front)
-  -- TODO: fix this
-  --local front_left = Vec2:fromAngle(self.spine.angles[2] - math.pi / 8)
-  local front_left = Vec2:fromAngle(math.pi / 8)
+  local angle = (joints[1].pos - joints[2]):angle()
+  local front_left = Vec2:fromAngle(angle - math.pi / 8)
   front_left = front_left:setMagnitude(self.body_width[1])
   front_left = front_left + joints[1].pos
   table.insert(left, front_left)
-  -- TODO: fix this
-  --local front_left_2 = Vec2:fromAngle(self.spine.angles[2] - math.pi / 4)
-  local front_left_2 = Vec2:fromAngle(math.pi / 4)
+  local front_left_2 = Vec2:fromAngle(angle - math.pi / 4)
   front_left_2 = front_left_2:setMagnitude(self.body_width[1])
   front_left_2 = front_left_2 + joints[1].pos
   table.insert(left, front_left_2)
-  -- TODO: fix this
-  --local front_right = Vec2:fromAngle(self.spine.angles[2] + math.pi / 8)
-  local front_right = Vec2:fromAngle(math.pi / 8)
+  local front_right = Vec2:fromAngle(angle + math.pi / 8)
   front_right = front_right:setMagnitude(self.body_width[1])
   front_right = front_right + joints[1].pos
   table.insert(right, front_right)
-  -- TODO: fix this
-  --local front_right_2 = Vec2:fromAngle(self.spine.angles[2] + math.pi / 4)
-  local front_right_2 = Vec2:fromAngle(math.pi / 4)
+  local front_right_2 = Vec2:fromAngle(angle + math.pi / 4)
   front_right_2 = front_right_2:setMagnitude(self.body_width[1])
   front_right_2 = front_right_2 + joints[1].pos
   table.insert(right, front_right_2)
 
   for i = 1, #joints - 2, 1 do
-    local side_1, side_2 = getSidePoints(self.body_width[i], joints[i], joints[i + 1])
-    table.insert(left, side_1)
-    table.insert(right, side_2)
+    local right_side, left_side = joints[i]:orthogonal(joints[i + 1], self.body_width[i])
+    table.insert(left, left_side)
+    table.insert(right, right_side)
   end
 
   local shape = {}
@@ -201,32 +220,29 @@ local function drawBody(self)
   end
 
   local points = Splines:new(shape):render({ detail = 500, type = 'v2' })
-  paintPolygon(points, body_color, { 1, 1, 1 })
+  paintPolygon(points, self.body_color, { 1, 1, 1 })
 end
 
 local function drawLateralFin(self, side, sign)
   sign = sign or 1
   local r_x = self.scale * 75
   local r_y = r_x / 2
+  local angle = (self.spine[2].pos - self.spine[3].pos):angle()
   love.graphics.translate(side.x, side.y)
-  -- TODO fix this
-  --love.graphics.rotate(self.spine:angles[3] + sign * math.pi / 3)
-  love.graphics.rotate(sign * math.pi / 3)
-  love.graphics.setColor(fin_color[1], fin_color[2], fin_color[3])
+  love.graphics.rotate(angle + sign * math.pi / 3)
+  love.graphics.setColor(self.fin_color[1], self.fin_color[2], self.fin_color[3])
   love.graphics.ellipse("fill", 0, 0, r_x, r_y)
   love.graphics.setColor(1, 1, 1)
   love.graphics.ellipse("line", 0, 0, r_x, r_y)
-  -- TODO fix this
-  --love.graphics.rotate(-self.spine.angles[3] - sign * math.pi / 3)
-  love.graphics.rotate(sign * math.pi / 3)
+  love.graphics.rotate(-angle - sign * math.pi / 3)
   love.graphics.translate(-side.x, -side.y)
 end
 
 local function drawLateralFins(self)
   local joints = self.spine.joints
-  local side_1, side_2 = getSidePoints(self.body_width[3], joints[3], joints[4])
-  drawLateralFin(self, side_1)
-  drawLateralFin(self, side_2, -1)
+  local right, left = joints[3]:orthogonal(joints[4], self.body_width[3])
+  drawLateralFin(self, left)
+  drawLateralFin(self, right, -1)
 end
 
 local function drawTail(self)
@@ -234,11 +250,17 @@ local function drawTail(self)
   local left = {}
   local right = {}
 
-  local side_1, side_2 = getSidePoints(0.8 * self.body_width[#joints - 2], joints[#joints - 2], joints[#joints - 1])
-  table.insert(left, side_1)
-  table.insert(right, side_2)
+  local right_side, left_side = joints[#joints - 2]:orthogonal(
+    joints[#joints - 1],
+    0.8 * self.body_width[#joints - 1]
+  )
+  table.insert(left, left_side)
+  table.insert(right, right_side)
 
-  local tail_2, tail_1 = getSidePoints(1.4 * self.body_width[#joints], joints[#joints], joints[#joints - 1])
+  local tail_1, tail_2 = joints[#joints]:orthogonal(
+    joints[#joints - 1],
+    1.2 * self.body_width[#joints]
+  )
   table.insert(left, tail_1)
   table.insert(right, tail_2)
 
@@ -256,7 +278,7 @@ local function drawTail(self)
   end
 
   local points = Splines:new(shape):render({ detail = 100, type = 'v2' })
-  paintPolygon(points, fin_color, { 1, 1, 1, })
+  paintPolygon(points, self.fin_color, { 1, 1, 1 })
 end
 
 function M:draw()

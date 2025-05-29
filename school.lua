@@ -1,7 +1,7 @@
 local M = {}
 
 local Vec2 = require 'vec2'
-local Fish = require 'fish_2'
+local Fish = require 'fish'
 
 local function initPositions(size, vw_min, vw_max, vh_min, vh_max)
   vw_min = vw_min or 0
@@ -40,7 +40,13 @@ end
 local function initFish(positions, scale)
   local fish = {}
   for _, p in ipairs(positions) do
-    table.insert(fish, Fish:new(p, scale))
+    table.insert(
+      fish,
+      Fish:new({
+        origin = p,
+        scale = scale
+      })
+    )
   end
   return fish
 end
@@ -209,8 +215,10 @@ function M:update(dt, target, k_far, k_close, range_close)
   end
 
   for i, fish_entity in ipairs(self.fish) do
-    fish_entity:resolve(self.positions[i], self.fish_speed_k * dt)
-    self.positions[i] = fish_entity.spine.joints[1]
+    fish_entity:setTarget(self.positions[i])
+    fish_entity:update(dt)
+
+    self.positions[i] = fish_entity.spine.joints[1].pos
   end
 end
 

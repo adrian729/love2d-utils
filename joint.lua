@@ -12,12 +12,19 @@ type = function(obj)
   return otype
 end
 
-function M:new(pos, link_size, angle_constraint)
+function M:new(opts)
+  opts = opts or {}
+
+  local angle_constraint = opts.angle_constraint
+  if angle_constraint ~= nil then
+    angle_constraint = Vec2.simplifyAngle(angle_constraint)
+  end
+
   return setmetatable(
     {
       __type = 'Joint',
-      pos = pos or Vec2:new(),
-      link_size = link_size or 0,
+      pos = opts.pos or Vec2:new(),
+      link_size = opts.link_size or 0,
       angle_constraint = angle_constraint
     },
     self

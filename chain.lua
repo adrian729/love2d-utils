@@ -13,35 +13,40 @@ type = function(obj)
   return otype
 end
 
-local function initJoints(joints, joint_count, link_size, angle_constraint)
-  if not joints then
-    joints = {}
-    for _ = 1, joint_count or 3, 1 do
-      table.insert(joints, Joint:new(nil, link_size or 10, angle_constraint))
-    end
+local function initUniformJoints(opts)
+  opts = opts or {}
+
+  local link_size = opts.link_size or 10
+  local angle_constraint = opts.angle_constraint
+  if angle_constraint then
+    angle_constraint = Vec2.simplifyAngle(angle_constraint)
   end
+
+  local joints = {}
+  for _ = 1, opts.joint_count or 3, 1 do
+    table.insert(
+      joints,
+      Joint:new({
+        link_size = link_size,
+        angle_constraint = angle_constraint
+      })
+    )
+  end
+
   return joints
 end
 
-function M:new(joints, anchor, target)
-  return setmetatable(
-    {
-      __type = 'Chain',
-      joints = initJoints(joints),
-      anchor = anchor,
-      target = target
-    },
-    self
-  )
-end
+function M:new(opts)
+  opts = opts or {}
 
-function M:newUniform(target, anchor, joint_count, link_size, angle_constraint)
+  local joints = opts.joints or initUniformJoints(opts)
+
   return setmetatable(
     {
       __type = 'Chain',
-      joints = initJoints(nil, joint_count, link_size, angle_constraint),
-      anchor = anchor,
-      target = target
+      joints = joints,
+      anchor = opts.anchor,
+      target = opts.target
     },
     self
   )
@@ -67,7 +72,7 @@ function M:__tostring()
   local chain_str = '[ '
 
   for i, joint in ipairs(self.joints) do
-    chain_str = chain_str .. tostring(joint) -- .. '/' .. tostring(self.angles[i])
+    chain_str = chain_str .. tostring(joint)
     if i < #self.joints then
       chain_str = chain_str .. ', '
     end
@@ -82,13 +87,14 @@ function M:__tostring()
 end
 
 function M:setScale(scale)
+  scale = scale or 1
   for _, joint in ipairs(self.joints) do
     joint.link_size = scale * joint.link_size
   end
 end
 
 local function fabrikForward(self)
-  if not self.target or self.joints[1].pos:distance(self.target) < 1 then
+  if not self.target or self.joints[1].pos:distance(self.target) < 2 then
     return
   end
 
@@ -111,7 +117,7 @@ end
 
 local function fabrikBackward(self)
   if not self.anchor
-      or self.joints[#self.joints].pos:distance(self.anchor) < 1
+      or self.joints[#self.joints].pos:distance(self.anchor) < 2
   then
     return
   end
@@ -124,7 +130,7 @@ local function fabrikBackward(self)
   end
 end
 
-function M:update()
+function M:update(_dt)
   fabrikForward(self)
   fabrikBackward(self)
 end

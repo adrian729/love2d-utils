@@ -247,13 +247,15 @@ end
 
 M.dir = M.direction
 
-function M:perpendicular(dir, m)
+function M:orthogonal(dir, m)
   m = m or 1
   local dx = dir.x - self.x
   local dy = dir.y - self.y
   return M:new(dy, -dx):setMagnitude(m) + self,
       M:new(-dy, dx):setMagnitude(m) + self
 end
+
+M.perpendicular = M.orthogonal
 
 function M.lerp(a, b, t)
   return a * (1 - t) + b * t
